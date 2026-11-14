@@ -36,7 +36,14 @@ func _refresh() -> void:
 	if cs and cs.shape is RectangleShape2D:
 		cs.shape.size = size
 
+@export var show_placeholder := true:
+	set(value):
+		show_placeholder = value
+		queue_redraw()
+
 func _draw() -> void:
+	if not show_placeholder:
+		return
 	draw_rect(Rect2(-size / 2, size), color)
 
 # Called by the game: fade blocks that aren't on the player's z-layer
