@@ -76,6 +76,7 @@ var target := ""
 var lines: Array[String] = []
 
 func _ready() -> void:
+	_create_hallucination_effect()
 	_fit_avatar_hitbox(original, Vector2(43, 118))
 	bed_spawn = original.position
 	_create_back_door()
@@ -616,6 +617,7 @@ func _advance_dialogue() -> void:
 	player.set_physics_process(true)
 
 func _refresh_objects() -> void:
+	_update_hallucination_effect()
 	match stage:
 		Stage.ROOM:
 			_show_prop("RoomKey", hallucinating and room_door_checked and not room_key)
@@ -830,3 +832,56 @@ func _create_head_platform() -> void:
 	shape.shape = surface
 	shape.one_way_collision = true
 	head.add_child(shape)
+
+const EYE_FRAMES := [
+	preload("res://Art/House/eye_closed.png"),
+	preload("res://Art/House/eye_open.png"),
+	preload("res://Art/House/eye_spiral.png")
+]
+
+var hallucination_tint: ColorRect
+var hallucination_eye: TextureRect
+var eye_animation: Tween
+
+func _create_hallucination_effect() -> void:
+	var tint_layer := CanvasLayer.new()
+	tint_layer.layer = 1
+	add_child(tint_layer)
+	hallucination_tint = ColorRect.new()
+	var mask_material := ShaderMaterial.new()
+	mask_material.shader = preload("res://Scenes/Levels/hallucination_mask.gdshader")
+	hallucination_tint.material = mask_material
+	hallucination_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tint_layer.add_child(hallucination_tint)
+	hallucination_tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hallucination_tint.hide()
+	$HUD.layer = 2
+	var eye_layer := CanvasLayer.new()
+	eye_layer.layer = 3
+	add_child(eye_layer)
+	hallucination_eye = TextureRect.new()
+	hallucination_eye.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	hallucination_eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hallucination_eye.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	eye_layer.add_child(hallucination_eye)
+	hallucination_eye.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	hallucination_eye.offset_left = -96
+	hallucination_eye.offset_top = -96
+	hallucination_eye.offset_right = 96
+	hallucination_eye.offset_bottom = 96
+	hallucination_eye.hide()
+
+func _update_hallucination_effect() -> void:
+	if hallucination_tint.visible == hallucinating:
+		return
+	hallucination_tint.visible = hallucinating
+	if eye_animation and eye_animation.is_running():
+		eye_animation.kill()
+	var first := 0 if hallucinating else 2
+	var last := 2 - first
+	hallucination_eye.texture = EYE_FRAMES[first]
+	hallucination_eye.show()
+	eye_animation = create_tween()
+	eye_animation.tween_callback(hallucination_eye.set_texture.bind(EYE_FRAMES[1])).set_delay(0.10)
+	eye_animation.tween_callback(hallucination_eye.set_texture.bind(EYE_FRAMES[last])).set_delay(0.10)
+	eye_animation.tween_callback(hallucination_eye.hide).set_delay(0.12)
