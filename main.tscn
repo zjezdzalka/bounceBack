@@ -57,7 +57,7 @@ color = Color(0.6, 0.4, 0.9, 1)
 layers = 4
 
 [node name="Player" parent="." unique_id=98052512 instance=ExtResource("3")]
-position = Vector2(576, 560)
+position = Vector2(460, 572)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1500594655]
 

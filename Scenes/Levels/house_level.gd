@@ -45,6 +45,7 @@ const APPARITION_TEXTURE := preload("res://Art/House/Character_glitched.png")
 var moved_props: Dictionary = {}
 var room_door_checked := false
 var room_key := false
+var lights_fixed := false
 var bed_idle := 0.0
 var bed_line := 0
 var left_bed := false
@@ -167,6 +168,8 @@ func _wake_up() -> void:
 func _update_story(delta: float) -> void:
 	match stage:
 		Stage.ROOM:
+			if hallucinating and not room_key and _near("RoomKey", 170.0):
+				_hint("room_key", "Narrator: There’s your key. Grab it before you bounce back to reality.")
 			if lamp_on and (player.position.x < 42.0 or player.position.x > 258.0 or laptop_checked):
 				left_bed = true
 			if lamp_on and not left_bed and bed_line < BED_LINES.size():
@@ -176,7 +179,8 @@ func _update_story(delta: float) -> void:
 					_say([BED_LINES[bed_line]])
 					bed_line += 1
 		Stage.HALL:
-			pass  # the wardrobe jump hint is handled on the Space key press (see _unhandled_key_input)
+			if $Objects/Wires.visible and _near("Wires", 105.0):
+				_hint("wires", "Narrator: See those wires? Try connecting them. Maybe that’ll get the lights working.")
 		Stage.BASEMENT:
 			if player.position.x > 980.0 and player.velocity.y < 0.0 and not climbed:
 				_hint("high_window", "Narrator: Bit high, isn’t it? Look around. There’s got to be something you can climb.")
@@ -204,6 +208,8 @@ func _update_target() -> void:
 				target = "HallChair"
 			elif _can_grab("Cabinet", 51.0):
 				target = "Cabinet"
+			elif $Objects/Wires.visible and _near("Wires", 52.0):
+				target = "Wires"
 			elif hallucinating and front_door_checked and _near("CellarDoor"):
 				target = "CellarDoor"
 			elif _near("FrontDoor"):
@@ -314,7 +320,7 @@ func _reveal_dialogue() -> void:
 	match stage:
 		Stage.ROOM:
 			if not room_key:
-				_hint("room_key", "Narrator: There’s your key. Grab it before you bounce back to reality.")
+				_hint("first_shrink", "Narrator: I didn’t expect you to shrink that much. Might come in handy. You can squeeze into tighter spaces now.")
 		Stage.HALL:
 			if front_door_checked:
 				_hint("cellar_door", "Narrator: There it is. Who puts a cabinet in front of a door?")
@@ -331,7 +337,7 @@ func _interact() -> void:
 			$Objects/Desk/LaptopOff.hide()
 			$Objects/Desk/LaptopOn.show()
 			_say([
-				"Narrator: Two kilometers. Take the bus. I don’t trust you to make it on foot.",
+				"Narrator: Ten kilometers. Take the bus. I don’t trust you to make it on foot.",
 				"Narrator: Come on. Let’s just get you out of this room first."
 			])
 		"RoomDoor":
@@ -362,8 +368,14 @@ func _interact() -> void:
 		"CellarDoor":
 			if _cabinet_blocks_door():
 				_hint("blocked_door", "Narrator: Try sliding it aside. Same as the chair.")
+			elif not lights_fixed:
+				_hint("dark_stairs", "Narrator: Find a way to get the lights working before you go down there. I’d hate for you to break your neck on the stairs.")
+				_refresh_objects()
 			else:
 				_go_forward()
+		"Wires":
+			lights_fixed = true
+			_refresh_objects()
 		"ToolCabinet":
 			has_key = true
 			_refresh_objects()
@@ -378,7 +390,11 @@ func _interact() -> void:
 		"Window":
 			if climbed and _near("Window", 80.0):
 				finished = true
-				player.set_physics_process(false)
+				_say([
+					"Narrator: You managed to get out of your house without dying. I’m flabbergasted.",
+					"Narrator: As they say, ‘One small step for man, one giant leap for a schizophrenic.’ Or something along those lines.",
+					"Narrator: Anyway, don’t celebrate just yet. You’ve still got a long way to go before you can bounce back to reality for good."
+				])
 			else:
 				_hint("high_window", "Narrator: Bit high, isn’t it? Look around. There’s got to be something you can climb.")
 
@@ -503,6 +519,7 @@ func _turn_on_lamp() -> void:
 	$Objects/Nightstand/LampOn.show()
 	darkness.hide()
 	_say([
+		"Hero: Why would I need help?",
 		"Narrator: You can hear me. That’s reason enough to get help. Even if I’m trying to help you.",
 		"Hero: Maybe I should listen to you this time.",
 		"Narrator: Good. Your laptop’s on the desk. Look up the nearest hospital."
@@ -533,6 +550,8 @@ func _refresh_objects() -> void:
 			_show_prop("HallChair", hallucinating)
 			_show_prop("Cabinet", hallucinating and front_door_checked)
 			_show_prop("CellarDoor", hallucinating and front_door_checked)
+			_show_prop("Wires", hallucinating and hints.has("dark_stairs") and not lights_fixed)
+			$Objects/CellarDoor.modulate = Color.WHITE if lights_fixed else Color(0.58, 0.58, 0.64)
 		Stage.BASEMENT:
 			_show_prop("CellarChair", hallucinating)
 			_show_prop("Gate", not gate_open)
@@ -550,7 +569,7 @@ func _action_label() -> String:
 	return {
 		"Laptop": "Sprawdź laptopa", "RoomDoor": "Sprawdź drzwi",
 		"RoomKey": "Podnieś klucz", "FrontDoor": "Sprawdź drzwi frontowe",
-		"CellarDoor": "Sprawdź drzwi do piwnicy", "ToolCabinet": "Przeszukaj szafkę",
+		"CellarDoor": "Sprawdź drzwi do piwnicy", "Wires": "Połącz przewody", "ToolCabinet": "Przeszukaj szafkę",
 		"Gate": "Sprawdź kraty", "Climb": "Wespnij się po drabinie",
 		"Window": "Sprawdź okno" if not climbed else "Wyjdź przez okno"
 	}.get(target, "")
