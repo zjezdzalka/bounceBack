@@ -16,6 +16,7 @@ const STEP_HEIGHT := 14.0   # biggest ledge he walks onto without jumping (pixel
 var z := 1   # current z-index (default 1)
 var coyote_timer := 0.0
 var jump_blocked_until_release := false
+var controls_enabled := true
 var can_jump := true   # the level turns this off while the hero is holding an object
 
 func _ready() -> void:
@@ -30,7 +31,7 @@ func _apply_z(new_z: int) -> void:
 	z_changed.emit(z)
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.physical_keycode == KEY_SPACE and not event.pressed:
+	if event is InputEventKey and event.is_action_released("house_jump") and not event.pressed:
 		jump_blocked_until_release = false
 	if not layer_switching_enabled:
 		return
@@ -61,18 +62,16 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 		coyote_timer -= delta
 
-	var dir := 0.0
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
-		dir -= 1.0
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
-		dir += 1.0
-	velocity.x = dir * SPEED
+	var direction := Input.get_axis("house_left", "house_right")
+	if layer_switching_enabled and is_zero_approx(direction):
+		direction = Input.get_axis("ui_left", "ui_right")
+	velocity.x = direction * SPEED if controls_enabled else 0.0
 
 	# Jump with Space (W / S now change the z-index)
-	var jump_pressed := Input.is_physical_key_pressed(KEY_SPACE)
+	var jump_pressed := Input.is_action_pressed("house_jump")
 	if not jump_pressed:
 		jump_blocked_until_release = false
-	if can_jump and not jump_blocked_until_release and jump_pressed and coyote_timer > 0.0:
+	if controls_enabled and can_jump and not jump_blocked_until_release and jump_pressed and coyote_timer > 0.0:
 		velocity.y = JUMP_VELOCITY
 		coyote_timer = 0.0
 

@@ -11,6 +11,12 @@ var apparition: CharacterBody2D
 var apparition_sprite: Sprite2D
 var apparition_rides := false
 var riding_offset := Vector2.ZERO
+var bed_spawn := Vector2.ZERO
+var saved_apparition: Variant = null
+var back_door: Node2D
+var learned_hints: Dictionary = {}
+const ROOM_PATHS := ["res://Scenes/Levels/room.tscn", "res://Scenes/Levels/hallway.tscn", "res://Scenes/Levels/basement.tscn"]
+const SAVED_FIELDS := ["lamp_on", "laptop_checked", "wardrobe_hint_shown", "front_door_checked", "room_door_checked", "room_key", "lights_fixed", "has_key", "gate_open", "moved_props", "hints", "learned_hints", "learned_move", "learned_jump", "left_bed", "bed_line"]
 const BODY_LAYER := 8
 const SHELF_LAYER := 16
 @onready var objects: Node2D = $Objects
@@ -67,11 +73,14 @@ var target := ""
 var lines: Array[String] = []
 
 func _ready() -> void:
+	bed_spawn = original.position
+	_create_back_door()
+	var visited: bool = _restore_progress()
 	_create_floating_hint()
 	_create_continue_hint()
 	RenderingServer.set_default_clear_color(Color("#222935"))
 	# In the first room the hero starts lying face up; he stands after the intro dialogue.
-	woke_up = stage != Stage.ROOM
+	woke_up = stage != Stage.ROOM or visited
 	if woke_up:
 		_show_avatar_texture()
 	else:
@@ -83,7 +92,10 @@ func _ready() -> void:
 	original.collision_layer = BODY_LAYER
 	_refresh_objects()
 	if clock_audio:
-		clock_audio.play()       
+		clock_audio.bus = "Sound Effects"
+		clock_audio.play()
+	if visited:
+		return
 	match stage:
 		Stage.ROOM:
 			darkness.show()
@@ -111,6 +123,8 @@ func _physics_process(_delta: float) -> void:
 	_follow_player()
 	
 func _process(delta: float) -> void:
+	if continue_hint.visible:
+		continue_hint.text = _press("house_interact", "continue")
 	if clock_audio and not clock_audio.playing:
 		clock_audio.play()
 	if woke_up:
@@ -186,6 +200,9 @@ func _update_story(delta: float) -> void:
 
 func _update_target() -> void:
 	target = ""
+	if back_door and _near("BackDoor", 74.0):
+		target = "BackDoor"
+		return
 	match stage:
 		Stage.ROOM:
 			if _near("RoomKey", 65.0) and hallucinating and room_door_checked and not room_key:
@@ -230,17 +247,17 @@ func _hint(id: String, line: String) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo() or busy or (finished and not dialogue.visible):
 		return
-	match event.physical_keycode:
-		KEY_Q:
+	match true:
+		true when event.is_action_pressed("house_switch"):
 			if not dialogue.visible and held_prop.is_empty() and (stage != Stage.ROOM or room_door_checked):
 				hallucinating = not hallucinating
 				_switch_avatar()
 				_refresh_objects()
 				_reveal_dialogue()
-		KEY_SPACE:
+		true when event.is_action_pressed("house_jump"):
 			if stage == Stage.HALL and not dialogue.visible:
 				_wardrobe_jump_hint()
-		KEY_E:
+		true when event.is_action_pressed("house_interact"):
 			if dialogue.visible:
 				_advance_dialogue()
 			elif not held_prop.is_empty():
@@ -251,7 +268,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _switch_avatar() -> void:
 	if hallucinating:
 		original.velocity = Vector2.ZERO
-		original.set_physics_process(false)
+		original.set("controls_enabled", false)
 		original.set_process_input(false)
 		if apparition == null:
 			apparition = preload("res://player.tscn").instantiate() as CharacterBody2D
@@ -262,9 +279,15 @@ func _switch_avatar() -> void:
 			apparition_sprite = Sprite2D.new()
 			apparition_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			apparition.add_child(apparition_sprite)
-			apparition.position = original.position
+			apparition.position = bed_spawn if stage == Stage.ROOM else original.position
 			var ghost_shape := apparition.get_node("CollisionPolygon2D") as CollisionPolygon2D
-			apparition.global_position.y += _player_bounds().position.y - _collision_bounds(ghost_shape).end.y - 1.0
+			if stage != Stage.ROOM or apparition.position.distance_to(original.position) < 95.0:
+				apparition.global_position.y = minf(apparition.global_position.y, _player_bounds().position.y - _collision_bounds(ghost_shape).end.y + apparition.global_position.y - 1.0)
+			if saved_apparition != null:
+				apparition.position = saved_apparition
+				saved_apparition = null
+		if apparition_rides:
+			apparition.position = original.position + riding_offset
 		apparition_rides = false
 		apparition.collision_layer = BODY_LAYER
 		apparition.collision_mask = 1 | BODY_LAYER | SHELF_LAYER
@@ -291,6 +314,7 @@ func _switch_avatar() -> void:
 func _set_active_avatar(avatar: CharacterBody2D) -> void:
 	player = avatar
 	player_shape = avatar.get_node("CollisionPolygon2D") as CollisionPolygon2D
+	avatar.set("controls_enabled", true)
 	avatar.set_process_input(true)
 	avatar.set_physics_process(true)
 
@@ -319,10 +343,15 @@ func _reveal_dialogue() -> void:
 				_hint("hall_chair", "Narrator: See that chair? Pull it up to the wardrobe. You can use it to climb over.")
 
 func _interact() -> void:
+	if target.is_empty():
+		return
+	learned_hints[_interaction_hint_id()] = true
 	if target in MOVABLE:
 		_grab_prop()
 		return
 	match target:
+		"BackDoor":
+			_change_room(ROOM_PATHS[stage - 1], true)
 		"Laptop":
 			laptop_checked = true
 			$Objects/Desk/LaptopOff.hide()
@@ -461,6 +490,7 @@ func _drop_prop() -> void:
 		_say(["Tu nie ma miejsca. Przesuń przedmiot i spróbuj ponownie."])
 		return
 	moved_props[held_prop] = true
+	learned_hints["drop"] = true
 	if held_prop == "Ladder":
 		climbed = false
 	held_prop = ""
@@ -488,10 +518,16 @@ func _climb_ladder() -> void:
 	busy = false
 
 func _go_forward() -> void:
+	_change_room(next_scene, false)
+
+func _change_room(path: String, backwards: bool) -> void:
+	_save_progress()
+	HouseSession.returning = backwards
 	busy = true
-	var result := get_tree().change_scene_to_file(next_scene)
+	var result := get_tree().change_scene_to_file(path)
 	if result != OK:
 		busy = false
+		HouseSession.returning = false
 		_say(["Nie udało się wczytać następnej sceny."])
 
 func _near(object_name: String, distance := 86.0) -> bool:
@@ -500,6 +536,7 @@ func _near(object_name: String, distance := 86.0) -> bool:
 func _say(text_lines: Array[String]) -> void:
 	lines = text_lines.duplicate()
 	dialogue.show()
+	continue_hint.text = _press("house_interact", "continue")
 	continue_hint.show()
 	player.set_process_input(false)
 	player.set_physics_process(false)
@@ -530,7 +567,7 @@ func _advance_dialogue() -> void:
 			_turn_on_lamp()
 			return
 		_wake_up()
-	player.jump_blocked_until_release = Input.is_physical_key_pressed(KEY_SPACE)
+	player.jump_blocked_until_release = Input.is_action_pressed("house_jump")
 	player.set_process_input(true)
 	player.set_physics_process(true)
 
@@ -588,19 +625,18 @@ func _update_floating_hint() -> void:
 
 func _floating_control_text() -> String:
 	if not held_prop.is_empty():
-		return "Press A / D to move the object\nPress E to put it down"
+		return "" if learned_hints.has("drop") else _press("house_interact", "put it down")
 	if stage == Stage.ROOM:
 		if not learned_move:
-			return "Press A / D to move"
+			return "Press %s / %s to move" % [HouseSession.key_name("house_left"), HouseSession.key_name("house_right")]
 		if room_door_checked and not room_key and apparition == null:
-			return "Press Q to enter the hallucination"
-		if room_key and hallucinating:
-			return "Press Q to return to reality"
-	if target in MOVABLE:
-		return "Press E to grab"
+			return _press("house_switch", "enter the hallucination")
+	if target in MOVABLE and not learned_hints.has(target):
+		return _press("house_interact", "grab")
 	if stage == Stage.ROOM and not learned_jump and target.is_empty():
-		return "Press Space to jump"
+		return _press("house_jump", "jump")
 	var action: String = {
+		"BackDoor": "return to the previous room",
 		"Laptop": "check the laptop",
 		"RoomDoor": "open the door" if room_key else "try the door",
 		"RoomKey": "pick up the key",
@@ -612,12 +648,14 @@ func _floating_control_text() -> String:
 		"Climb": "climb the ladder",
 		"Window": "climb out the window" if climbed else "check the window",
 	}.get(target, "")
-	return "" if action.is_empty() else "Press E to " + action
+	if not action.is_empty() and not learned_hints.has(_interaction_hint_id()):
+		return _press("house_interact", action)
+	return _press("house_switch", "bounce back to reality") if hallucinating else ""
 
 func _create_continue_hint() -> void:
 	continue_hint = Label.new()
 	continue_hint.name = "ContinueHint"
-	continue_hint.text = "Press E to continue"
+	continue_hint.text = _press("house_interact", "continue")
 	continue_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	continue_hint.add_theme_font_size_override("font_size", 16)
 	continue_hint.add_theme_color_override("font_color", Color("#fff0bf"))
@@ -630,3 +668,61 @@ func _create_continue_hint() -> void:
 	continue_hint.offset_bottom = -12.0
 	continue_hint.offset_top = -36.0
 	continue_hint.hide()
+
+func _press(action: String, verb: String) -> String:
+	return "Press %s to %s" % [HouseSession.key_name(action), verb]
+
+func _interaction_hint_id() -> String:
+	match target:
+		"RoomDoor": return "UnlockRoomDoor" if room_key else target
+		"CellarDoor": return "EnterBasement" if lights_fixed else target
+		"Gate": return "UnlockGate" if has_key else target
+		"Window": return "EscapeWindow" if climbed else target
+	return target
+
+func _create_back_door() -> void:
+	if stage == Stage.ROOM:
+		return
+	back_door = Node2D.new()
+	back_door.name = "BackDoor"
+	objects.add_child(back_door)
+	back_door.position = Vector2(original.position.x, original.position.y - 24.0)
+	var sprite := Sprite2D.new()
+	sprite.texture = preload("res://Art/House/Door_big.png")
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	back_door.add_child(sprite)
+
+func _save_progress() -> void:
+	var record := {}
+	for field in SAVED_FIELDS:
+		record[field] = get(field)
+	var positions := {}
+	for name in MOVABLE:
+		if objects.has_node(name):
+			positions[name] = objects.get_node(name).position
+	record["positions"] = positions
+	record["apparition"] = apparition.position if apparition != null else saved_apparition
+	HouseSession.rooms[scene_file_path] = record.duplicate(true)
+
+func _restore_progress() -> bool:
+	var backwards: bool = HouseSession.returning
+	HouseSession.returning = false
+	if not HouseSession.rooms.has(scene_file_path):
+		return false
+	var record: Dictionary = HouseSession.rooms[scene_file_path].duplicate(true)
+	for field in SAVED_FIELDS:
+		set(field, record[field])
+	saved_apparition = record["apparition"]
+	for name in record["positions"]:
+		objects.get_node(name).position = record["positions"][name]
+	if stage == Stage.ROOM and lamp_on:
+		$Objects/Nightstand/LampOff.hide()
+		$Objects/Nightstand/LampOn.show()
+		$Objects/Desk/LaptopOff.visible = not laptop_checked
+		$Objects/Desk/LaptopOn.visible = laptop_checked
+		darkness.hide()
+	if backwards:
+		var exit_name := "RoomDoor" if stage == Stage.ROOM else "CellarDoor"
+		original.position.x = objects.get_node(exit_name).position.x
+		original.position.y = 600.0 - _player_half_size().y - 6.0
+	return true

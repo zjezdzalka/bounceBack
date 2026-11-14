@@ -22,3 +22,7 @@ config/features=PackedStringArray("4.7")
 
 window/size/viewport_height=752
 window/stretch/mode="canvas_items"
+
+[autoload]
+
+HouseSession="*res://Scenes/Levels/house_session.gd"
