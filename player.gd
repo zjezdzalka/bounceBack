@@ -8,17 +8,19 @@ const GRAVITY := 1400.0
 const SIZE := Vector2(32, 48)
 const MIN_Z := 1
 const MAX_Z := 3
+const COYOTE_TIME := 0.05   # seconds you can still jump after leaving a platform
 
 var z := 1   # current z-index (default 1)
+var coyote_timer := 0.0
 
 func _ready() -> void:
 	_apply_z(1)
 
 func _apply_z(new_z: int) -> void:
 	z = new_z
-	collision_layer = 0                 # nothing needs to collide with the player
-	collision_mask = 1 << (z - 1)       # only collide with objects on the same z
-	z_index = z * 2 + 1                 # draw in front of objects on the same z
+	collision_layer = 0                 
+	collision_mask = 1 << (z - 1)       
+	z_index = z * 2 + 1                 
 	z_changed.emit(z)
 
 func _input(event: InputEvent) -> void:
@@ -42,8 +44,12 @@ func _try_change_z(new_z: int) -> void:
 		_apply_z(new_z)
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	# Gravity, plus the coyote-time timer
+	if is_on_floor():
+		coyote_timer = COYOTE_TIME
+	else:
 		velocity.y += GRAVITY * delta
+		coyote_timer -= delta
 
 	var dir := 0.0
 	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
@@ -53,10 +59,8 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	# Jump with Space (W / S now change the z-index)
-	var jump := Input.is_physical_key_pressed(KEY_SPACE) \
-		or Input.is_physical_key_pressed(KEY_UP) \
-		or Input.is_physical_key_pressed(KEY_K)
-	if jump and is_on_floor():
+	if Input.is_physical_key_pressed(KEY_SPACE) and coyote_timer > 0.0:
 		velocity.y = JUMP_VELOCITY
+		coyote_timer = 0.0 
 
 	move_and_slide()
