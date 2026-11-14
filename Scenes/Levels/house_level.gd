@@ -14,8 +14,6 @@ var riding_offset := Vector2.ZERO
 const BODY_LAYER := 8
 const SHELF_LAYER := 16
 @onready var objects: Node2D = $Objects
-@onready var status: Label = $HUD/Status
-@onready var prompt: Label = $HUD/Prompt
 @onready var dialogue: Label = $HUD/Dialogue
 @onready var darkness: ColorRect = $HUD/Darkness
 
@@ -46,6 +44,10 @@ var moved_props: Dictionary = {}
 var room_door_checked := false
 var room_key := false
 var lights_fixed := false
+var learned_move := false
+var learned_jump := false
+var floating_hint: Label
+var continue_hint: Label
 var bed_idle := 0.0
 var bed_line := 0
 var left_bed := false
@@ -65,6 +67,8 @@ var target := ""
 var lines: Array[String] = []
 
 func _ready() -> void:
+	_create_floating_hint()
+	_create_continue_hint()
 	RenderingServer.set_default_clear_color(Color("#222935"))
 	# In the first room the hero starts lying face up; he stands after the intro dialogue.
 	woke_up = stage != Stage.ROOM
@@ -116,20 +120,7 @@ func _process(delta: float) -> void:
 	if not dialogue.visible and not busy and not finished:
 		_update_story(delta)
 	_update_target()
-	status.text = ""
-	if lamp_on or stage != Stage.ROOM:
-		status.text = "A/D: ruch   Spacja: skok"
-	if room_door_checked or stage != Stage.ROOM:
-		status.text += "   |   Q: przełącz postać (%s)" % ("wł." if hallucinating else "wył.")
-	prompt.text = "" if target.is_empty() else "E  " + _action_label()
-	if not held_prop.is_empty():
-		prompt.text = "E  Odłóż   •   A/D  Przesuń"
-	elif target.is_empty() and stage == Stage.ROOM and lamp_on and laptop_checked and not room_door_checked:
-		prompt.text = "Podejdź do drzwi i sprawdź klamkę."
-	if dialogue.visible:
-		prompt.text = "E  Dalej"
-	elif finished:
-		prompt.text = "Koniec prototypu"
+	_update_floating_hint()
 
 func _find_player_sprite() -> Sprite2D:
 	# Hallway/basement have a HouseCharacter sprite; the room uses player.tscn's TextureRect,
@@ -509,6 +500,7 @@ func _near(object_name: String, distance := 86.0) -> bool:
 func _say(text_lines: Array[String]) -> void:
 	lines = text_lines.duplicate()
 	dialogue.show()
+	continue_hint.show()
 	player.set_process_input(false)
 	player.set_physics_process(false)
 	_advance_dialogue()
@@ -529,15 +521,16 @@ func _advance_dialogue() -> void:
 	if not lines.is_empty():
 		dialogue.text = lines.pop_front()
 		return
-	if finished:
-		dialogue.hide()
-		return
 	dialogue.hide()
+	continue_hint.hide()
+	if finished:
+		return
 	if not woke_up:
 		if not lamp_on:
 			_turn_on_lamp()
 			return
 		_wake_up()
+	player.jump_blocked_until_release = Input.is_physical_key_pressed(KEY_SPACE)
 	player.set_process_input(true)
 	player.set_physics_process(true)
 
@@ -563,13 +556,77 @@ func _show_prop(object_name: String, enabled: bool) -> void:
 	if prop is StaticBody2D:
 		prop.collision_layer = prop.layers if enabled and held_prop != object_name else 0
 
-func _action_label() -> String:
+func _create_floating_hint() -> void:
+	floating_hint = Label.new()
+	floating_hint.name = "FloatingControlHint"
+	floating_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	floating_hint.add_theme_font_size_override("font_size", 19)
+	floating_hint.add_theme_color_override("font_color", Color("#fff0bf"))
+	floating_hint.add_theme_color_override("font_outline_color", Color("#161922"))
+	floating_hint.add_theme_constant_override("outline_size", 6)
+	floating_hint.hide()
+	$HUD.add_child(floating_hint)
+
+func _update_floating_hint() -> void:
+	if not woke_up or dialogue.visible or busy or finished:
+		floating_hint.hide()
+		return
+	learned_move = learned_move or absf(player.get_real_velocity().x) > 1.0
+	learned_jump = learned_jump or player.velocity.y < -1.0
+	var text := _floating_control_text()
+	if text.is_empty():
+		floating_hint.hide()
+		return
+	floating_hint.text = text
+	floating_hint.reset_size()
+	var bounds := _player_bounds()
+	var x := bounds.end.x + 14.0
+	if x + floating_hint.size.x > 1136.0:
+		x = bounds.position.x - floating_hint.size.x - 14.0
+	floating_hint.position = Vector2(maxf(x, 16.0), clampf(bounds.get_center().y - 14.0, 16.0, 590.0))
+	floating_hint.show()
+
+func _floating_control_text() -> String:
+	if not held_prop.is_empty():
+		return "Press A / D to move the object\nPress E to put it down"
+	if stage == Stage.ROOM:
+		if not learned_move:
+			return "Press A / D to move"
+		if room_door_checked and not room_key and apparition == null:
+			return "Press Q to enter the hallucination"
+		if room_key and hallucinating:
+			return "Press Q to return to reality"
 	if target in MOVABLE:
-		return "Chwyć"
-	return {
-		"Laptop": "Sprawdź laptopa", "RoomDoor": "Sprawdź drzwi",
-		"RoomKey": "Podnieś klucz", "FrontDoor": "Sprawdź drzwi frontowe",
-		"CellarDoor": "Sprawdź drzwi do piwnicy", "Wires": "Połącz przewody", "ToolCabinet": "Przeszukaj szafkę",
-		"Gate": "Sprawdź kraty", "Climb": "Wespnij się po drabinie",
-		"Window": "Sprawdź okno" if not climbed else "Wyjdź przez okno"
+		return "Press E to grab"
+	if stage == Stage.ROOM and not learned_jump and target.is_empty():
+		return "Press Space to jump"
+	var action: String = {
+		"Laptop": "check the laptop",
+		"RoomDoor": "open the door" if room_key else "try the door",
+		"RoomKey": "pick up the key",
+		"FrontDoor": "try the front door",
+		"CellarDoor": "enter the basement" if lights_fixed else "check the basement door",
+		"Wires": "connect the wires",
+		"ToolCabinet": "search the cabinet",
+		"Gate": "unlock the gate" if has_key else "check the gate",
+		"Climb": "climb the ladder",
+		"Window": "climb out the window" if climbed else "check the window",
 	}.get(target, "")
+	return "" if action.is_empty() else "Press E to " + action
+
+func _create_continue_hint() -> void:
+	continue_hint = Label.new()
+	continue_hint.name = "ContinueHint"
+	continue_hint.text = "Press E to continue"
+	continue_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	continue_hint.add_theme_font_size_override("font_size", 16)
+	continue_hint.add_theme_color_override("font_color", Color("#fff0bf"))
+	continue_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var panel := $HUD/TextBackground as Control
+	panel.add_child(continue_hint)
+	continue_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	continue_hint.offset_right = -24.0
+	continue_hint.offset_left = -260.0
+	continue_hint.offset_bottom = -12.0
+	continue_hint.offset_top = -36.0
+	continue_hint.hide()
