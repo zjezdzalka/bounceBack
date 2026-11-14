@@ -9,6 +9,7 @@ const SIZE := Vector2(32, 48)
 const MIN_Z := 1
 const MAX_Z := 3
 const COYOTE_TIME := 0.05   # seconds you can still jump after leaving a platform
+const STEP_HEIGHT := 14.0   # biggest ledge he walks onto without jumping (pixels)
 
 @export var layer_switching_enabled := true
 
@@ -16,13 +17,14 @@ var z := 1   # current z-index (default 1)
 var coyote_timer := 0.0
 
 func _ready() -> void:
+	floor_snap_length = STEP_HEIGHT + 4.0   # keeps him glued to the ground after a step
 	_apply_z(1)
 
 func _apply_z(new_z: int) -> void:
 	z = new_z
-	collision_layer = 0                 
-	collision_mask = 1 << (z - 1)       
-	z_index = z * 2 + 1                 
+	collision_layer = 0
+	collision_mask = 1 << (z - 1)
+	z_index = z * 2 + 1
 	z_changed.emit(z)
 
 func _input(event: InputEvent) -> void:
@@ -65,6 +67,21 @@ func _physics_process(delta: float) -> void:
 	# Jump with Space (W / S now change the z-index)
 	if Input.is_physical_key_pressed(KEY_SPACE) and coyote_timer > 0.0:
 		velocity.y = JUMP_VELOCITY
-		coyote_timer = 0.0 
+		coyote_timer = 0.0
 
+	_try_step_up(delta)
 	move_and_slide()
+
+func _try_step_up(delta: float) -> void:
+	# Only while walking on the ground, not while jumping or falling
+	if not is_on_floor() or velocity.y < 0.0 or is_zero_approx(velocity.x):
+		return
+	var motion := Vector2(velocity.x * delta, 0.0)
+	if not test_move(global_transform, motion):
+		return                                   # nothing in the way
+	var up := Vector2(0.0, -STEP_HEIGHT)
+	if test_move(global_transform, up):
+		return                                   # no room above (ceiling)
+	if test_move(global_transform.translated(up), motion):
+		return                                   # still blocked when raised: a wall, not a step
+	global_position.y -= STEP_HEIGHT

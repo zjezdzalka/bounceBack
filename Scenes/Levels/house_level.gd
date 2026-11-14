@@ -23,7 +23,7 @@ var gate_open := false
 var held_prop := ""
 var held_side := 1.0
 @onready var player_shape: CollisionShape2D = $Player/CollisionShape2D
-@onready var player_sprite: Sprite2D = $Player/HouseCharacter
+@onready var player_sprite: Sprite2D = _find_player_sprite()
 
 const CHAR_IDLE_PATH := "res://characaterx10.png"  # default standing pose
 const CHAR_RIGHT_PATH := "res://char_right10x.png"
@@ -116,6 +116,21 @@ func _process(delta: float) -> void:
 	elif finished:
 		prompt.text = "Koniec prototypu"
 
+func _find_player_sprite() -> Sprite2D:
+	# Hallway/basement have a HouseCharacter sprite; the room uses player.tscn's TextureRect,
+	# so in that case create a Sprite2D here and hide the TextureRect.
+	var sprite := player.get_node_or_null("HouseCharacter") as Sprite2D
+	if sprite:
+		return sprite
+	sprite = Sprite2D.new()
+	sprite.name = "HouseCharacter"
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	player.add_child(sprite)
+	var old_rect := player.get_node_or_null("TextureRect") as CanvasItem
+	if old_rect:
+		old_rect.hide()
+	return sprite
+
 func _show_texture(tex: Texture2D) -> void:
 	if tex == null:
 		return
@@ -125,8 +140,8 @@ func _show_texture(tex: Texture2D) -> void:
 
 func _lie_down() -> void:
 	_show_texture(char_right if char_right != null else char_idle)  # walking-right sprite
-	player_sprite.rotation_degrees = -70.0  # lying on the other side
-	player_sprite.position.y = 20.0
+	player_sprite.rotation_degrees = -90.0  # lying on the other side
+	player_sprite.position.y = 12.0
 
 func _wake_up() -> void:
 	woke_up = true

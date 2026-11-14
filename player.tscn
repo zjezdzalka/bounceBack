@@ -3,15 +3,13 @@
 [ext_resource type="Script" uid="uid://bacl340amkhc5" path="res://player.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://ckpp3jdqt1mws" path="res://characaterx10.png" id="2_onrkg"]
 
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(32, 53)
-
 [node name="Player" type="CharacterBody2D" unique_id=937810438]
 script = ExtResource("1")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1931591006]
-position = Vector2(0, -0.5)
-shape = SubResource("1")
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=402874004]
+position = Vector2(4.798174e-06, -0.49999788)
+scale = Vector2(0.9069767, 0.9807694)
+polygon = PackedVector2Array(2.5, 27.083328, 9.166664, 27.083328, 9.166664, 6.6666718, 13.333328, 11.25, 17.916664, 11.25, 17.916664, 6.6666718, 11.25, 0, 6.666664, 0, 11.25, -4.5833282, 15.833328, -9.166672, 15.833328, -22.5, 11.25, -27.083328, -11.25, -27.083328, -15.833336, -22.5, -15.833336, -8.75, -6.666668, 0, -11.25, 0, -17.916668, 6.6666718, -17.916668, 11.25, -13.333336, 11.25, -8.75, 6.6666718, -8.75, 27.083328, -2.0833359, 27.083328, -2.0833359, 22.5, 2.0833282, 22.5, 2.5, 22.5)
 
 [node name="Body" type="ColorRect" parent="." unique_id=203239216]
 visible = false

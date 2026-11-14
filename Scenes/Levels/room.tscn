@@ -3,19 +3,19 @@
 [ext_resource type="Script" uid="uid://ckpdu7ojph7eu" path="res://Scenes/Levels/house_level.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://dmg0ukd1sp2um" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
-[ext_resource type="Texture2D" uid="uid://cdgoctro3ymb5" path="res://Art/House/Bed.png" id="Bed"]
-[ext_resource type="Texture2D" uid="uid://c5aes3aejhqgb" path="res://Art/House/Character.png" id="Character"]
+[ext_resource type="Texture2D" uid="uid://b7ys3pxxcfhkb" path="res://Art/House/bed10x_nopillow.png" id="Bed"]
 [ext_resource type="Texture2D" uid="uid://jwers2rom4by" path="res://Art/House/Nighttable_off.png" id="Nighttable_off"]
 [ext_resource type="Texture2D" uid="uid://dal4ta6ni2wyt" path="res://Art/House/Nighttable_on.png" id="Nighttable_on"]
+[ext_resource type="Texture2D" uid="uid://djttwym3fehhv" path="res://Art/House/pillow_10xx.png" id="Pillow"]
 [ext_resource type="Texture2D" uid="uid://cclavdg8xcl3e" path="res://Art/House/Starting_room.png" id="Starting_room"]
 [ext_resource type="Texture2D" uid="uid://blkkq5h7yr17h" path="res://Art/House/Table_laptop_off.png" id="Table_laptop_off"]
 [ext_resource type="Texture2D" uid="uid://dn5pq70gxoolf" path="res://Art/House/Table_laptop_on.png" id="Table_laptop_on"]
 
-[node name="Room" type="Node2D" unique_id=966844058]
+[node name="Room" type="Node2D" unique_id=1494530991]
 script = ExtResource("1")
 next_scene = "res://Scenes/Levels/hallway.tscn"
 
-[node name="RoomBackground" type="Sprite2D" parent="." unique_id=1509863413]
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=940953551]
 modulate = Color(0.8, 0.8, 0.8, 1)
 z_index = -4
 texture_filter = 1
@@ -25,9 +25,9 @@ texture = ExtResource("Starting_room")
 region_enabled = true
 region_rect = Rect2(2, 2, 74, 35)
 
-[node name="Objects" type="Node2D" parent="." unique_id=1039957487]
+[node name="Objects" type="Node2D" parent="." unique_id=484390348]
 
-[node name="Floor" parent="Objects" unique_id=1015639390 instance=ExtResource("3")]
+[node name="Floor" parent="Objects" unique_id=89401896 instance=ExtResource("3")]
 z_index = 2
 position = Vector2(576, 625)
 collision_layer = 7
@@ -36,7 +36,7 @@ size = Vector2(1152, 50)
 color = Color(0.31, 0.34, 0.39, 1)
 layers = 7
 
-[node name="LeftWall" parent="Objects" unique_id=1028206211 instance=ExtResource("3")]
+[node name="LeftWall" parent="Objects" unique_id=1758239253 instance=ExtResource("3")]
 z_index = 2
 position = Vector2(12, 300)
 collision_layer = 7
@@ -45,7 +45,7 @@ size = Vector2(24, 600)
 color = Color(0.19, 0.22, 0.27, 1)
 layers = 7
 
-[node name="RightWall" parent="Objects" unique_id=755565702 instance=ExtResource("3")]
+[node name="RightWall" parent="Objects" unique_id=836665563 instance=ExtResource("3")]
 z_index = 2
 position = Vector2(1140, 300)
 collision_layer = 7
@@ -54,17 +54,17 @@ size = Vector2(24, 600)
 color = Color(0.19, 0.22, 0.27, 1)
 layers = 7
 
-[node name="Bed" parent="Objects" unique_id=1990151558 instance=ExtResource("3")]
+[node name="Bed" parent="Objects" unique_id=1785676080 instance=ExtResource("3")]
 z_index = 2
-position = Vector2(150, 559.5)
+position = Vector2(150, 564)
 collision_layer = 7
 collision_mask = 0
-size = Vector2(216, 81)
+size = Vector2(216, 72)
 color = Color(0.29, 0.35, 0.44, 1)
 layers = 7
 show_placeholder = false
 
-[node name="Label" type="Label" parent="Objects/Bed" unique_id=1595712673]
+[node name="Label" type="Label" parent="Objects/Bed" unique_id=1295492987]
 z_index = 8
 offset_left = -90.0
 offset_top = -46.0
@@ -73,15 +73,25 @@ theme_override_font_sizes/font_size = 16
 text = "Łóżko"
 horizontal_alignment = 1
 
-[node name="Art" type="Sprite2D" parent="Objects/Bed" unique_id=1341894208]
+[node name="Art" type="Sprite2D" parent="Objects/Bed" unique_id=1566238429]
 texture_filter = 1
-position = Vector2(0, -67.5)
-scale = Vector2(9, 9)
+scale = Vector2(0.9, 0.9)
 texture = ExtResource("Bed")
 
-[node name="Nightstand" parent="Objects" unique_id=616794546 instance=ExtResource("3")]
+[node name="Pillow" type="Sprite2D" parent="Objects/Bed" unique_id=1761540631]
+texture_filter = 1
+position = Vector2(-78, -42)
+scale = Vector2(-0.8236931, 1.2723919)
+texture = ExtResource("Pillow")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Objects/Bed" unique_id=1825150859]
+position = Vector2(-10, -3)
+polygon = PackedVector2Array(-98, 38, -80, 38, -80, 21, -72, 21, -71, 12, 91, 12, 91, 21, 100, 21, 100, 38, 119, 38, 118, -33, -48, -33, -48, -45, -88, -45, -88, -33, -98, -33)
+
+[node name="Nightstand" parent="Objects" unique_id=1825576246 instance=ExtResource("3")]
 z_index = 2
-position = Vector2(303, 570)
+position = Vector2(309, 563)
+scale = Vector2(1.1600013, 1.1600013)
 collision_layer = 7
 collision_mask = 0
 size = Vector2(77, 60)
@@ -89,7 +99,7 @@ color = Color(0.32, 0.26, 0.23, 1)
 layers = 7
 show_placeholder = false
 
-[node name="Label" type="Label" parent="Objects/Nightstand" unique_id=30414991]
+[node name="Label" type="Label" parent="Objects/Nightstand" unique_id=817577642]
 z_index = 8
 offset_left = -90.0
 offset_top = -43.0
@@ -97,25 +107,27 @@ offset_right = 90.0
 theme_override_font_sizes/font_size = 16
 text = "Stolik"
 horizontal_alignment = 1
+metadata/_edit_use_anchors_ = true
 
-[node name="LampOff" type="Sprite2D" parent="Objects/Nightstand" unique_id=1967663253]
+[node name="LampOff" type="Sprite2D" parent="Objects/Nightstand" unique_id=1333087980]
 texture_filter = 1
 position = Vector2(0, -36)
 scale = Vector2(5.5, 5.5)
 texture = ExtResource("Nighttable_off")
 
-[node name="LampOn" type="Sprite2D" parent="Objects/Nightstand" unique_id=44824151]
+[node name="LampOn" type="Sprite2D" parent="Objects/Nightstand" unique_id=1801353893]
 visible = false
 texture_filter = 1
 position = Vector2(0, -36)
 scale = Vector2(5.5, 5.5)
 texture = ExtResource("Nighttable_on")
 
-[node name="Lamp" type="Node2D" parent="Objects" unique_id=735248862]
+[node name="Lamp" type="Node2D" parent="Objects" unique_id=1894446193]
 z_index = 1
-position = Vector2(303, 516)
+position = Vector2(309, 509)
+scale = Vector2(1.1600013, 1.1600013)
 
-[node name="Placeholder" type="ColorRect" parent="Objects/Lamp" unique_id=1478940415]
+[node name="Placeholder" type="ColorRect" parent="Objects/Lamp" unique_id=1102149410]
 visible = false
 offset_left = -14.5
 offset_top = -18.5
@@ -124,7 +136,7 @@ offset_bottom = 18.5
 mouse_filter = 2
 color = Color(0.97, 0.77, 0.36, 1)
 
-[node name="Label" type="Label" parent="Objects/Lamp" unique_id=446113215]
+[node name="Label" type="Label" parent="Objects/Lamp" unique_id=1999253265]
 z_index = 8
 offset_left = -90.0
 offset_top = -41.5
@@ -133,12 +145,12 @@ theme_override_font_sizes/font_size = 16
 text = "Lampka"
 horizontal_alignment = 1
 
-[node name="Desk" type="Node2D" parent="Objects" unique_id=7927680]
+[node name="Desk" type="Node2D" parent="Objects" unique_id=1508144047]
 z_index = 1
-position = Vector2(594, 575)
-scale = Vector2(0.68468994, 0.68468994)
+position = Vector2(532, 574)
+scale = Vector2(0.7199976, 0.7199976)
 
-[node name="Label" type="Label" parent="Objects/Desk" unique_id=1622496071]
+[node name="Label" type="Label" parent="Objects/Desk" unique_id=1864376467]
 z_index = 8
 offset_left = -90.0
 offset_top = -53.0
@@ -146,25 +158,27 @@ offset_right = 90.0
 theme_override_font_sizes/font_size = 16
 text = "Biurko"
 horizontal_alignment = 1
+metadata/_edit_use_anchors_ = true
 
-[node name="LaptopOff" type="Sprite2D" parent="Objects/Desk" unique_id=258484450]
+[node name="LaptopOff" type="Sprite2D" parent="Objects/Desk" unique_id=914327827]
 texture_filter = 1
 position = Vector2(0, -67)
 scale = Vector2(9, 9)
 texture = ExtResource("Table_laptop_off")
 
-[node name="LaptopOn" type="Sprite2D" parent="Objects/Desk" unique_id=1241919403]
+[node name="LaptopOn" type="Sprite2D" parent="Objects/Desk" unique_id=2102244646]
 visible = false
 texture_filter = 1
 position = Vector2(0, -67)
 scale = Vector2(9, 9)
 texture = ExtResource("Table_laptop_on")
 
-[node name="Laptop" type="Node2D" parent="Objects" unique_id=452577698]
+[node name="Laptop" type="Node2D" parent="Objects" unique_id=1451120378]
 z_index = 1
-position = Vector2(584, 515)
+position = Vector2(532, 505)
+scale = Vector2(0.7199976, 0.7199976)
 
-[node name="Placeholder" type="ColorRect" parent="Objects/Laptop" unique_id=687783717]
+[node name="Placeholder" type="ColorRect" parent="Objects/Laptop" unique_id=1797442203]
 visible = false
 offset_left = -27.5
 offset_top = -14.5
@@ -173,7 +187,7 @@ offset_bottom = 14.5
 mouse_filter = 2
 color = Color(0.51, 0.73, 0.78, 1)
 
-[node name="Label" type="Label" parent="Objects/Laptop" unique_id=1658789591]
+[node name="Label" type="Label" parent="Objects/Laptop" unique_id=1422319391]
 z_index = 8
 offset_left = -90.0
 offset_top = -37.5
@@ -182,20 +196,20 @@ theme_override_font_sizes/font_size = 16
 text = "Laptop"
 horizontal_alignment = 1
 
-[node name="RoomDoor" type="Node2D" parent="Objects" unique_id=1548733309]
+[node name="RoomDoor" type="Node2D" parent="Objects" unique_id=85730971]
 z_index = 1
-position = Vector2(985, 585)
-scale = Vector2(0.35999754, 0.27692246)
+position = Vector2(970, 583)
+scale = Vector2(0.36365625, 0.32547554)
 
-[node name="Art" type="Sprite2D" parent="Objects/RoomDoor" unique_id=707068888]
+[node name="Art" type="Sprite2D" parent="Objects/RoomDoor" unique_id=1297833397]
 texture_filter = 1
-position = Vector2(0, -180)
-scale = Vector2(11.076923, 15)
+position = Vector2(0, -264.22885)
+scale = Vector2(14.37675, 19.468515)
 texture = ExtResource("Starting_room")
 region_enabled = true
 region_rect = Rect2(77, 5, 20, 32)
 
-[node name="Label" type="Label" parent="Objects/RoomDoor" unique_id=837809425]
+[node name="Label" type="Label" parent="Objects/RoomDoor" unique_id=1010008633]
 z_index = 8
 offset_left = -90.0
 offset_top = -75.5
@@ -204,12 +218,12 @@ theme_override_font_sizes/font_size = 16
 text = "Drzwi"
 horizontal_alignment = 1
 
-[node name="RoomKey" type="Node2D" parent="Objects" unique_id=440036690]
+[node name="RoomKey" type="Node2D" parent="Objects" unique_id=587546045]
 visible = false
 z_index = 2
 position = Vector2(764, 548)
 
-[node name="Placeholder" type="ColorRect" parent="Objects/RoomKey" unique_id=1726071052]
+[node name="Placeholder" type="ColorRect" parent="Objects/RoomKey" unique_id=143411491]
 offset_left = -13.0
 offset_top = -6.0
 offset_right = 13.0
@@ -217,36 +231,23 @@ offset_bottom = 6.0
 mouse_filter = 2
 color = Color(0.98, 0.83, 0.36, 1)
 
-[node name="Player" parent="." unique_id=942491159 instance=ExtResource("2")]
-position = Vector2(119, 452)
-scale = Vector2(2.4, 2.4)
-layer_switching_enabled = false
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1374781356]
 
-[node name="TextureRect" parent="Player" index="2" unique_id=982247166]
-visible = false
-
-[node name="HouseCharacter" type="Sprite2D" parent="Player" unique_id=72999298]
-texture_filter = 1
-scale = Vector2(2.25, 2.25)
-texture = ExtResource("Character")
-
-[node name="HUD" type="CanvasLayer" parent="." unique_id=1770586676]
-
-[node name="Darkness" type="ColorRect" parent="HUD" unique_id=2049897368]
+[node name="Darkness" type="ColorRect" parent="HUD" unique_id=494588672]
 visible = false
 offset_right = 1152.0
 offset_bottom = 752.0
 mouse_filter = 2
 color = Color(0.01, 0.015, 0.025, 0.84)
 
-[node name="TextBackground" type="ColorRect" parent="HUD" unique_id=327268880]
+[node name="TextBackground" type="ColorRect" parent="HUD" unique_id=863877660]
 offset_top = 622.0
 offset_right = 1152.0
 offset_bottom = 752.0
 mouse_filter = 2
 color = Color(0.04, 0.05, 0.07, 0.9)
 
-[node name="Dialogue" type="Label" parent="HUD" unique_id=729451010]
+[node name="Dialogue" type="Label" parent="HUD" unique_id=1997922608]
 visible = false
 offset_left = 80.0
 offset_top = 630.0
@@ -257,7 +258,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="Prompt" type="Label" parent="HUD" unique_id=381677246]
+[node name="Prompt" type="Label" parent="HUD" unique_id=1787783473]
 offset_left = 32.0
 offset_top = 692.0
 offset_right = 1120.0
@@ -265,11 +266,13 @@ theme_override_colors/font_color = Color(0.98, 0.83, 0.48, 1)
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 
-[node name="Status" type="Label" parent="HUD" unique_id=393642913]
+[node name="Status" type="Label" parent="HUD" unique_id=77555533]
 offset_left = 32.0
 offset_top = 722.0
 offset_right = 1120.0
 theme_override_font_sizes/font_size = 17
 horizontal_alignment = 1
 
-[editable path="Player"]
+[node name="Player" parent="." unique_id=937810438 instance=ExtResource("2")]
+position = Vector2(143.00002, 460)
+scale = Vector2(2.7032313, 2.7032313)
