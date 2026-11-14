@@ -17,6 +17,7 @@ var back_door: Node2D
 var learned_hints: Dictionary = {}
 const ROOM_PATHS := ["res://Scenes/Levels/room.tscn", "res://Scenes/Levels/hallway.tscn", "res://Scenes/Levels/basement.tscn"]
 const SAVED_FIELDS := ["lamp_on", "laptop_checked", "wardrobe_hint_shown", "front_door_checked", "room_door_checked", "room_key", "lights_fixed", "has_key", "gate_open", "moved_props", "hints", "learned_hints", "learned_move", "learned_jump", "left_bed", "bed_line"]
+const AVATAR_ART_SCALE := 1.25
 const BODY_LAYER := 8
 const SHELF_LAYER := 16
 @onready var objects: Node2D = $Objects
@@ -73,6 +74,7 @@ var target := ""
 var lines: Array[String] = []
 
 func _ready() -> void:
+	_fit_avatar_hitbox(original, Vector2(43, 118))
 	bed_spawn = original.position
 	_create_back_door()
 	var visited: bool = _restore_progress()
@@ -89,7 +91,7 @@ func _ready() -> void:
 		var label := prop.get_node_or_null("Label") as Label
 		if label:
 			label.hide()
-	original.collision_layer = BODY_LAYER
+	_create_head_platform()
 	_refresh_objects()
 	if clock_audio:
 		clock_audio.bus = "Sound Effects"
@@ -155,10 +157,10 @@ func _show_avatar_texture() -> void:
 	var tex := APPARITION_TEXTURE if player == apparition else BODY_TEXTURE
 	var sprite := apparition_sprite if player == apparition else player_sprite
 	sprite.texture = tex
-	sprite.scale = Vector2.ONE / sprite.get_parent().global_scale
+	sprite.scale = Vector2.ONE * AVATAR_ART_SCALE / sprite.get_parent().global_scale
 	var shape := (player_shape as CollisionPolygon2D)
 	var foot_y := _collision_bounds(shape).end.y
-	sprite.global_position.y = foot_y - tex.get_height() / 2.0
+	sprite.global_position.y = foot_y - tex.get_height() * AVATAR_ART_SCALE / 2.0
 
 func _lie_down() -> void:
 	_show_avatar_texture()
@@ -251,6 +253,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		true when event.is_action_pressed("house_switch"):
 			if not dialogue.visible and held_prop.is_empty() and (stage != Stage.ROOM or room_door_checked):
 				hallucinating = not hallucinating
+				if not hallucinating:
+					HouseSession.learned_bounce_back = true
 				_switch_avatar()
 				_refresh_objects()
 				_reveal_dialogue()
@@ -275,13 +279,17 @@ func _switch_avatar() -> void:
 			apparition.set("layer_switching_enabled", false)
 			apparition.scale = original.scale * float(APPARITION_TEXTURE.get_height()) / BODY_TEXTURE.get_height()
 			add_child(apparition)
+			_fit_avatar_hitbox(apparition, Vector2(10, 29))
 			apparition.get_node("TextureRect").hide()
+			apparition.z_index = original.z_index + 1
 			apparition_sprite = Sprite2D.new()
 			apparition_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			apparition.add_child(apparition_sprite)
 			apparition.position = bed_spawn if stage == Stage.ROOM else original.position
 			var ghost_shape := apparition.get_node("CollisionPolygon2D") as CollisionPolygon2D
-			if stage != Stage.ROOM or apparition.position.distance_to(original.position) < 95.0:
+			if stage == Stage.ROOM:
+				_spawn_apparition_on_bed(ghost_shape)
+			else:
 				apparition.global_position.y = minf(apparition.global_position.y, _player_bounds().position.y - _collision_bounds(ghost_shape).end.y + apparition.global_position.y - 1.0)
 			if saved_apparition != null:
 				apparition.position = saved_apparition
@@ -289,9 +297,8 @@ func _switch_avatar() -> void:
 		if apparition_rides:
 			apparition.position = original.position + riding_offset
 		apparition_rides = false
-		apparition.collision_layer = BODY_LAYER
+		apparition.collision_layer = 0
 		apparition.collision_mask = 1 | BODY_LAYER | SHELF_LAYER
-		original.collision_mask = 1 | BODY_LAYER
 		apparition.show()
 		_set_active_avatar(apparition)
 		_show_avatar_texture()
@@ -650,7 +657,9 @@ func _floating_control_text() -> String:
 	}.get(target, "")
 	if not action.is_empty() and not learned_hints.has(_interaction_hint_id()):
 		return _press("house_interact", action)
-	return _press("house_switch", "bounce back to reality") if hallucinating else ""
+	if hallucinating and not HouseSession.learned_bounce_back:
+		return _press("house_switch", "bounce back to reality")
+	return ""
 
 func _create_continue_hint() -> void:
 	continue_hint = Label.new()
@@ -726,3 +735,41 @@ func _restore_progress() -> bool:
 		original.position.x = objects.get_node(exit_name).position.x
 		original.position.y = 600.0 - _player_half_size().y - 6.0
 	return true
+
+func _fit_avatar_hitbox(avatar: CharacterBody2D, body_size: Vector2) -> void:
+	var hitbox := avatar.get_node("CollisionPolygon2D") as CollisionPolygon2D
+	var sole_y := _collision_bounds(hitbox).end.y
+	var center_x := avatar.global_position.x
+	var half_width := body_size.x / 2.0
+	var top_y := sole_y - body_size.y
+	hitbox.polygon = PackedVector2Array([
+		hitbox.to_local(Vector2(center_x - half_width, top_y)),
+		hitbox.to_local(Vector2(center_x + half_width, top_y)),
+		hitbox.to_local(Vector2(center_x + half_width, sole_y)),
+		hitbox.to_local(Vector2(center_x - half_width, sole_y)),
+	])
+
+func _spawn_apparition_on_bed(hitbox: CollisionPolygon2D) -> void:
+	var bed := $Objects/Bed as Node2D
+	var x := bed.global_position.x + (52.0 if original.global_position.x <= bed.global_position.x else -52.0)
+	var ray := PhysicsRayQueryParameters2D.create(Vector2(x, bed.global_position.y - 140.0), Vector2(x, bed.global_position.y + 40.0), 1)
+	var surface := get_world_2d().direct_space_state.intersect_ray(ray)
+	if surface.get("collider") == bed:
+		apparition.global_position.x = x
+		var top: Vector2 = surface["position"]
+		apparition.global_position.y += top.y - _collision_bounds(hitbox).end.y - 0.1
+
+func _create_head_platform() -> void:
+	var bounds := _collision_bounds(player_shape)
+	var head := StaticBody2D.new()
+	head.name = "HeadPlatform"
+	head.collision_layer = BODY_LAYER
+	head.collision_mask = 0
+	original.add_child(head)
+	head.global_position = Vector2(bounds.get_center().x, bounds.position.y + 1.0)
+	var surface := RectangleShape2D.new()
+	surface.size = Vector2(bounds.size.x, 2.0) / original.global_scale.abs()
+	var shape := CollisionShape2D.new()
+	shape.shape = surface
+	shape.one_way_collision = true
+	head.add_child(shape)
