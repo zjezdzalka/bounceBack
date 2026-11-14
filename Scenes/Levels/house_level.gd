@@ -12,6 +12,7 @@ enum Stage { ROOM, HALL, BASEMENT }
 @onready var dialogue: Label = $HUD/Dialogue
 @onready var darkness: ColorRect = $HUD/Darkness
 
+var woke_up := true
 var hallucinating := false
 var lamp_on := false
 var laptop_checked := false
@@ -22,6 +23,15 @@ var gate_open := false
 var held_prop := ""
 var held_side := 1.0
 @onready var player_shape: CollisionShape2D = $Player/CollisionShape2D
+@onready var player_sprite: Sprite2D = $Player/HouseCharacter
+
+const CHAR_IDLE_PATH := "res://characaterx10.png"  # default standing pose
+const CHAR_RIGHT_PATH := "res://char_right10x.png"
+const CHAR_LEFT_PATH := "res://char_left10x.png"
+const CHAR_HEIGHT := 54.0  # on-screen height of the character in pixels
+var char_idle: Texture2D
+var char_right: Texture2D
+var char_left: Texture2D
 var moved_props: Dictionary = {}
 var room_door_checked := false
 var room_key := false
@@ -45,6 +55,15 @@ var lines: Array[String] = []
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("#222935"))
+	char_idle = load(CHAR_IDLE_PATH) as Texture2D
+	char_right = load(CHAR_RIGHT_PATH) as Texture2D
+	char_left = load(CHAR_LEFT_PATH) as Texture2D
+	# In the first room the hero starts lying face up; he stands after the intro dialogue.
+	woke_up = stage != Stage.ROOM
+	if woke_up:
+		_show_texture(char_idle)
+	else:
+		_lie_down()
 	for prop in objects.get_children():
 		var label := prop.get_node_or_null("Label") as Label
 		if label:
@@ -73,8 +92,12 @@ func _physics_process(_delta: float) -> void:
 	_follow_player()
 
 func _process(delta: float) -> void:
-	if not is_zero_approx(player.velocity.x):
-		$Player/HouseCharacter.flip_h = player.velocity.x < 0.0
+	if woke_up:
+		var moving := not is_zero_approx(player.velocity.x) and not dialogue.visible and not busy
+		if moving:
+			_show_texture(char_right if player.velocity.x > 0.0 else char_left)
+		else:
+			_show_texture(char_idle)
 	if not dialogue.visible and not busy and not finished:
 		_update_story(delta)
 	_update_target()
@@ -92,6 +115,24 @@ func _process(delta: float) -> void:
 		prompt.text = "E  Dalej"
 	elif finished:
 		prompt.text = "Koniec prototypu"
+
+func _show_texture(tex: Texture2D) -> void:
+	if tex == null:
+		return
+	player_sprite.texture = tex
+	# The 10x art is much larger than the old 24x24 sprite, so scale it to a fixed height.
+	player_sprite.scale = Vector2.ONE * (CHAR_HEIGHT / tex.get_height())
+
+func _lie_down() -> void:
+	_show_texture(char_right if char_right != null else char_idle)  # walking-right sprite
+	player_sprite.rotation_degrees = -70.0  # lying on the other side
+	player_sprite.position.y = 20.0
+
+func _wake_up() -> void:
+	woke_up = true
+	player_sprite.rotation_degrees = 0.0
+	player_sprite.position.y = 0.0
+	_show_texture(char_idle)
 
 func _update_story(delta: float) -> void:
 	match stage:
@@ -371,6 +412,8 @@ func _advance_dialogue() -> void:
 		dialogue.hide()
 		return
 	dialogue.hide()
+	if not woke_up:
+		_wake_up()  # the 3rd press of E ends the intro dialogue
 	player.set_process_input(true)
 	player.set_physics_process(true)
 
