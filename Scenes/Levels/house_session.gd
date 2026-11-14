@@ -157,3 +157,19 @@ func _display(fullscreen: bool, save: bool) -> void:
 	if save:
 		config.set_value("display", "fullscreen", fullscreen)
 		config.save(FILE)
+
+const DOOR_COOLDOWN_MS := 750
+var door_ready_at := 0
+var door_effect: AudioStreamPlayer
+
+func can_use_door() -> bool:
+	return Time.get_ticks_msec() >= door_ready_at and (not is_instance_valid(door_effect) or not door_effect.playing)
+
+func play_door_open() -> void:
+	door_ready_at = Time.get_ticks_msec() + DOOR_COOLDOWN_MS
+	if not is_instance_valid(door_effect):
+		door_effect = AudioStreamPlayer.new()
+		door_effect.stream = load("res://Audio/House/door_open.mp3")
+		door_effect.bus = "Sound Effects"
+		add_child(door_effect)
+	door_effect.play()

@@ -60,6 +60,7 @@ var bed_line := 0
 var left_bed := false
 var gate_wait := 0.0
 var hints: Dictionary = {}
+var queued_narrator_hints: Array[String] = []
 
 const MOVABLE := ["HallChair", "Cabinet", "CellarChair", "Ladder"]
 const BED_LINES := [
@@ -135,6 +136,8 @@ func _process(delta: float) -> void:
 			sprite.flip_h = player.velocity.x < 0.0
 	if not dialogue.visible and not busy and not finished:
 		_update_story(delta)
+		if not dialogue.visible and _can_show_narrator_hint() and not queued_narrator_hints.is_empty():
+			_say([queued_narrator_hints.pop_front()])
 	_update_target()
 	_update_floating_hint()
 
@@ -186,6 +189,8 @@ func _update_story(delta: float) -> void:
 					_say([BED_LINES[bed_line]])
 					bed_line += 1
 		Stage.HALL:
+			if player.velocity.y < -1.0:
+				_wardrobe_jump_hint()
 			if $Objects/Wires.visible and _near("Wires", 105.0):
 				_hint("wires", "Narrator: See those wires? Try connecting them. Maybe that’ll get the lights working.")
 		Stage.BASEMENT:
@@ -244,7 +249,10 @@ func _near_gate() -> bool:
 func _hint(id: String, line: String) -> void:
 	if not hints.has(id):
 		hints[id] = true
-		_say([line])
+		queued_narrator_hints.append(line)
+
+func _can_show_narrator_hint() -> bool:
+	return player.is_on_floor() and player.velocity.y >= -1.0
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo() or busy or (finished and not dialogue.visible):
@@ -258,9 +266,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_switch_avatar()
 				_refresh_objects()
 				_reveal_dialogue()
-		true when event.is_action_pressed("house_jump"):
-			if stage == Stage.HALL and not dialogue.visible:
-				_wardrobe_jump_hint()
 		true when event.is_action_pressed("house_interact"):
 			if dialogue.visible:
 				_advance_dialogue()
@@ -334,7 +339,7 @@ func _wardrobe_jump_hint() -> void:
 	# Pressing Space anywhere in the ~220 px in front of the wardrobe counts as trying to jump it.
 	if player.position.x > left - 220.0 and player.position.x < left + half_width * 2.0:
 		wardrobe_hint_shown = true
-		_say(["Narrator: Yeah, you’re not jumping that. Try using that superpower of yours again. Maybe you’ll see something you can use."])
+		_hint("wardrobe_jump", "Narrator: Yeah, you’re not jumping that. Try using that superpower of yours again. Maybe you’ll see something you can use.")
 
 func _reveal_dialogue() -> void:
 	if not hallucinating:
@@ -528,11 +533,15 @@ func _go_forward() -> void:
 	_change_room(next_scene, false)
 
 func _change_room(path: String, backwards: bool) -> void:
+	if busy or not HouseSession.can_use_door():
+		return
 	_save_progress()
 	HouseSession.returning = backwards
 	busy = true
 	var result := get_tree().change_scene_to_file(path)
-	if result != OK:
+	if result == OK:
+		HouseSession.play_door_open()
+	else:
 		busy = false
 		HouseSession.returning = false
 		_say(["Nie udało się wczytać następnej sceny."])
