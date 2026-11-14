@@ -10,6 +10,8 @@ const MIN_Z := 1
 const MAX_Z := 3
 const COYOTE_TIME := 0.05   # seconds you can still jump after leaving a platform
 
+@export var layer_switching_enabled := true
+
 var z := 1   # current z-index (default 1)
 var coyote_timer := 0.0
 
@@ -24,6 +26,8 @@ func _apply_z(new_z: int) -> void:
 	z_changed.emit(z)
 
 func _input(event: InputEvent) -> void:
+	if not layer_switching_enabled:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_W: _try_change_z(z + 1)

@@ -21,8 +21,8 @@ var has_key := false
 var gate_open := false
 var held_prop := ""
 var held_side := 1.0
+@onready var player_shape: CollisionShape2D = $Player/CollisionShape2D
 var moved_props: Dictionary = {}
-var ladder_z := 1
 var room_door_checked := false
 var room_key := false
 var bed_idle := 0.0
@@ -44,7 +44,6 @@ var target := ""
 var lines: Array[String] = []
 
 func _ready() -> void:
-	player.z_changed.connect(_update_layer)
 	RenderingServer.set_default_clear_color(Color("#222935"))
 	for prop in objects.get_children():
 		var label := prop.get_node_or_null("Label") as Label
@@ -70,21 +69,25 @@ func _ready() -> void:
 				"Narrator: See that window over there? It’s probably your only way out of this dump."
 			])
 
-func _process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	_follow_player()
+
+func _process(delta: float) -> void:
+	if not is_zero_approx(player.velocity.x):
+		$Player/HouseCharacter.flip_h = player.velocity.x < 0.0
 	if not dialogue.visible and not busy and not finished:
 		_update_story(delta)
 	_update_target()
-	status.text = "Z: %d" % player.z
+	status.text = ""
 	if lamp_on or stage != Stage.ROOM:
-		status.text += "   |   A/D: ruch   Spacja: skok   W/S: Z"
+		status.text = "A/D: ruch   Spacja: skok"
 	if room_door_checked or stage != Stage.ROOM:
 		status.text += "   |   Q: halucynacja (%s)" % ("wł." if hallucinating else "wył.")
 	prompt.text = "" if target.is_empty() else "E  " + _action_label()
 	if not held_prop.is_empty():
-		prompt.text = "E  Odłóż   •   A/D  Przesuń   •   W/S  Zmień Z"
+		prompt.text = "E  Odłóż   •   A/D  Przesuń"
 	elif target.is_empty() and stage == Stage.ROOM and lamp_on and laptop_checked and not room_door_checked:
-		prompt.text = "Wskocz na podest na warstwie Z2 i sprawdź drzwi."
+		prompt.text = "Podejdź do drzwi i sprawdź klamkę."
 	if dialogue.visible:
 		prompt.text = "E  Dalej"
 	elif finished:
@@ -93,7 +96,7 @@ func _process(delta: float) -> void:
 func _update_story(delta: float) -> void:
 	match stage:
 		Stage.ROOM:
-			if lamp_on and (player.position.x < 42.0 or player.position.x > 212.0 or laptop_checked):
+			if lamp_on and (player.position.x < 42.0 or player.position.x > 258.0 or laptop_checked):
 				left_bed = true
 			if lamp_on and not left_bed and bed_line < BED_LINES.size():
 				bed_idle += delta
@@ -128,7 +131,7 @@ func _update_target() -> void:
 				target = "RoomKey"
 			elif _near("Laptop") and lamp_on and not laptop_checked:
 				target = "Laptop"
-			elif _near("RoomDoor") and lamp_on and player.z == 2 and player.position.y < 500.0:
+			elif _near("RoomDoor") and lamp_on:
 				target = "RoomDoor"
 		Stage.HALL:
 			if _can_grab("HallChair"):
@@ -198,6 +201,8 @@ func _interact() -> void:
 	match target:
 		"Lamp":
 			lamp_on = true
+			$Objects/Nightstand/LampOff.hide()
+			$Objects/Nightstand/LampOn.show()
 			darkness.hide()
 			_say([
 				"Narrator: You can hear me. That’s reason enough to get help. Even if I’m trying to help you.",
@@ -206,6 +211,8 @@ func _interact() -> void:
 			])
 		"Laptop":
 			laptop_checked = true
+			$Objects/Desk/LaptopOff.hide()
+			$Objects/Desk/LaptopOn.show()
 			_say([
 				"Narrator: Two kilometers. Take the bus. I don’t trust you to make it on foot.",
 				"Narrator: Come on. Let’s just get you out of this room first."
@@ -261,8 +268,8 @@ func _can_grab(name: String, distance := 86.0) -> bool:
 	if not prop.visible or not _near(name, distance):
 		return false
 	if name == "Ladder":
-		return gate_open and (not moved_props.has(name) or player.z == ladder_z)
-	return (prop.layers & (1 << (player.z - 1))) != 0
+		return gate_open
+	return true
 
 func _grab_prop() -> void:
 	held_prop = target
@@ -270,40 +277,49 @@ func _grab_prop() -> void:
 	held_side = -1.0 if prop.position.x < player.position.x else 1.0
 	if prop is StaticBody2D:
 		prop.collision_layer = 0
-	_follow_player()
 
 func _follow_player() -> void:
 	if held_prop.is_empty():
 		return
 	var prop = objects.get_node(held_prop)
-	var half_width: float = prop.size.x / 2.0 if prop is StaticBody2D else 23.0
-	var offset := (half_width + 21.0) * held_side
-	prop.position.x = clampf(player.position.x + offset, 24.0 + half_width, 1128.0 - half_width)
-	prop.z_index = player.z * 2
+	var query := _prop_query(prop)
+	var half_width: float = query.shape.size.x / 2.0
+	var offset := (half_width + _player_half_size().x + 5.0) * held_side
+	var destination := clampf(player.position.x + offset, 24.0 + half_width, 1128.0 - half_width)
+	var motion := Vector2(destination - prop.position.x, 0.0)
+	query.motion = motion
+	var safe_fraction := get_world_2d().direct_space_state.cast_motion(query)[0]
+	prop.position.x += motion.x * safe_fraction
 
-func _drop_prop() -> void:
-	var prop = objects.get_node(held_prop)
-	var layer: int = 1 << (player.z - 1)
-	var size: Vector2 = prop.size if prop is StaticBody2D else Vector2(46, 266)
+func _prop_query(prop: Node2D) -> PhysicsShapeQueryParameters2D:
+	var size: Vector2 = prop.get("size") if prop is StaticBody2D else Vector2(46, 266)
 	var shape := RectangleShape2D.new()
-	shape.size = size - Vector2(2, 2)
+	shape.size = size - Vector2(0, 2)
 	var query := PhysicsShapeQueryParameters2D.new()
 	query.shape = shape
 	query.transform = prop.global_transform
-	query.collision_mask = layer
+	query.collision_mask = 1
 	if held_prop == "Ladder":
+		# The ladder rests against the window sill.
 		query.exclude = [objects.get_node("Sill").get_rid()]
+	return query
+
+func _player_half_size() -> Vector2:
+	var shape := player_shape.shape as RectangleShape2D
+	return shape.size * player_shape.global_scale.abs() / 2.0
+
+func _drop_prop() -> void:
+	var prop: Node2D = objects.get_node(held_prop)
+	var query := _prop_query(prop)
+	var size: Vector2 = query.shape.size + Vector2(0, 2)
+	var half_player := _player_half_size()
 	var overlaps_player := Rect2(prop.global_position - size / 2.0, size).intersects(
-		Rect2(player.global_position - Vector2(16, 27), Vector2(32, 53))
+		Rect2(player_shape.global_position - half_player, half_player * 2.0)
 	)
 	if overlaps_player or not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
 		_say(["Tu nie ma miejsca. Przesuń przedmiot i spróbuj ponownie."])
 		return
 	moved_props[held_prop] = true
-	if prop is StaticBody2D:
-		prop.layers = layer
-	else:
-		ladder_z = player.z
 	if held_prop == "Ladder":
 		climbed = false
 	held_prop = ""
@@ -312,10 +328,10 @@ func _drop_prop() -> void:
 func _cabinet_blocks_door() -> bool:
 	var cabinet = objects.get_node("Cabinet")
 	var door = objects.get_node("CellarDoor")
-	return (cabinet.layers & (1 << (player.z - 1))) != 0 and absf(cabinet.position.x - door.position.x) < 65.0
+	return absf(cabinet.position.x - door.position.x) < 65.0
 
 func _ladder_ready() -> bool:
-	return moved_props.has("Ladder") and ladder_z == player.z and absf(objects.get_node("Ladder").position.x - 1035.0) < 44.0
+	return moved_props.has("Ladder") and absf(objects.get_node("Ladder").position.x - 1035.0) < 44.0
 
 
 func _climb_ladder() -> void:
@@ -358,9 +374,6 @@ func _advance_dialogue() -> void:
 	player.set_process_input(true)
 	player.set_physics_process(true)
 
-func _update_layer(z: int) -> void:
-	get_tree().call_group("blocks", "show_for_layer", z)
-
 func _refresh_objects() -> void:
 	match stage:
 		Stage.ROOM:
@@ -373,7 +386,6 @@ func _refresh_objects() -> void:
 			_show_prop("CellarChair", hallucinating or moved_props.has("CellarChair"))
 			_show_prop("Gate", not gate_open)
 			_show_prop("Ladder", hallucinating or moved_props.has("Ladder"))
-	_update_layer(player.z)
 
 func _show_prop(object_name: String, enabled: bool) -> void:
 	var prop = objects.get_node(object_name)
