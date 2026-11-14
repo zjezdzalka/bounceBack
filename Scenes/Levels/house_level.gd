@@ -5,7 +5,14 @@ enum Stage { ROOM, HALL, BASEMENT }
 @export var stage: Stage
 @export_file("*.tscn") var next_scene: String
 
-@onready var player = $Player
+@onready var original: CharacterBody2D = $Player
+@onready var player = original
+var apparition: CharacterBody2D
+var apparition_sprite: Sprite2D
+var apparition_rides := false
+var riding_offset := Vector2.ZERO
+const BODY_LAYER := 8
+const SHELF_LAYER := 16
 @onready var objects: Node2D = $Objects
 @onready var status: Label = $HUD/Status
 @onready var prompt: Label = $HUD/Prompt
@@ -25,13 +32,9 @@ var held_side := 1.0
 @onready var player_shape: CollisionShape2D = $Player/CollisionShape2D
 @onready var player_sprite: Sprite2D = _find_player_sprite()
 
-const CHAR_IDLE_PATH := "res://characaterx10.png"  # default standing pose
-const CHAR_RIGHT_PATH := "res://char_right10x.png"
-const CHAR_LEFT_PATH := "res://char_left10x.png"
+const BODY_TEXTURE := preload("res://Art/House/Character_big.png")
+const APPARITION_TEXTURE := preload("res://Art/House/Character_glitched.png")
 const CHAR_HEIGHT := 54.0  # on-screen height of the character in pixels
-var char_idle: Texture2D
-var char_right: Texture2D
-var char_left: Texture2D
 var moved_props: Dictionary = {}
 var room_door_checked := false
 var room_key := false
@@ -55,19 +58,17 @@ var lines: Array[String] = []
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("#222935"))
-	char_idle = load(CHAR_IDLE_PATH) as Texture2D
-	char_right = load(CHAR_RIGHT_PATH) as Texture2D
-	char_left = load(CHAR_LEFT_PATH) as Texture2D
 	# In the first room the hero starts lying face up; he stands after the intro dialogue.
 	woke_up = stage != Stage.ROOM
 	if woke_up:
-		_show_texture(char_idle)
+		_show_avatar_texture()
 	else:
 		_lie_down()
 	for prop in objects.get_children():
 		var label := prop.get_node_or_null("Label") as Label
 		if label:
 			label.hide()
+	original.collision_layer = BODY_LAYER
 	_refresh_objects()
 	match stage:
 		Stage.ROOM:
@@ -89,15 +90,15 @@ func _ready() -> void:
 			])
 
 func _physics_process(_delta: float) -> void:
+	if apparition_rides and not hallucinating:
+		apparition.position = original.position + riding_offset
 	_follow_player()
 
 func _process(delta: float) -> void:
 	if woke_up:
-		var moving := not is_zero_approx(player.velocity.x) and not dialogue.visible and not busy
-		if moving:
-			_show_texture(char_right if player.velocity.x > 0.0 else char_left)
-		else:
-			_show_texture(char_idle)
+		if not is_zero_approx(player.velocity.x):
+			var sprite := apparition_sprite if player == apparition else player_sprite
+			sprite.flip_h = player.velocity.x < 0.0
 	if not dialogue.visible and not busy and not finished:
 		_update_story(delta)
 	_update_target()
@@ -105,7 +106,7 @@ func _process(delta: float) -> void:
 	if lamp_on or stage != Stage.ROOM:
 		status.text = "A/D: ruch   Spacja: skok"
 	if room_door_checked or stage != Stage.ROOM:
-		status.text += "   |   Q: halucynacja (%s)" % ("wł." if hallucinating else "wył.")
+		status.text += "   |   Q: przełącz postać (%s)" % ("wł." if hallucinating else "wył.")
 	prompt.text = "" if target.is_empty() else "E  " + _action_label()
 	if not held_prop.is_empty():
 		prompt.text = "E  Odłóż   •   A/D  Przesuń"
@@ -131,15 +132,15 @@ func _find_player_sprite() -> Sprite2D:
 		old_rect.hide()
 	return sprite
 
-func _show_texture(tex: Texture2D) -> void:
-	if tex == null:
-		return
-	player_sprite.texture = tex
+func _show_avatar_texture() -> void:
+	var tex := APPARITION_TEXTURE if player == apparition else BODY_TEXTURE
+	var sprite := apparition_sprite if player == apparition else player_sprite
+	sprite.texture = tex
 	# The 10x art is much larger than the old 24x24 sprite, so scale it to a fixed height.
-	player_sprite.scale = Vector2.ONE * (CHAR_HEIGHT / tex.get_height())
+	sprite.scale = Vector2.ONE * (CHAR_HEIGHT / tex.get_height())
 
 func _lie_down() -> void:
-	_show_texture(char_right if char_right != null else char_idle)  # walking-right sprite
+	_show_avatar_texture()
 	player_sprite.rotation_degrees = -90.0  # lying on the other side
 	player_sprite.position.y = 12.0
 
@@ -147,7 +148,7 @@ func _wake_up() -> void:
 	woke_up = true
 	player_sprite.rotation_degrees = 0.0
 	player_sprite.position.y = 0.0
-	_show_texture(char_idle)
+	_show_avatar_texture()
 
 func _update_story(delta: float) -> void:
 	match stage:
@@ -185,7 +186,7 @@ func _update_target() -> void:
 				target = "RoomKey"
 			elif _near("Laptop") and lamp_on and not laptop_checked:
 				target = "Laptop"
-			elif _near("RoomDoor") and lamp_on:
+			elif _near("RoomDoor") and lamp_on and player == original:
 				target = "RoomDoor"
 		Stage.HALL:
 			if _can_grab("HallChair"):
@@ -201,7 +202,7 @@ func _update_target() -> void:
 				target = "ToolCabinet"
 			elif hallucinating and not gate_open and _near_gate():
 				target = "Gate"
-			elif _ladder_ready() and not climbed and absf(player.position.x - objects.get_node("Ladder").position.x) < 32.0 and _near("Ladder", 170.0):
+			elif hallucinating and _ladder_ready() and not climbed and absf(player.position.x - objects.get_node("Ladder").position.x) < 32.0 and _near("Ladder", 170.0):
 				target = "Climb"
 			elif _can_grab("Ladder", 148.0):
 				target = "Ladder"
@@ -225,6 +226,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_Q:
 			if not dialogue.visible and held_prop.is_empty() and (stage != Stage.ROOM or room_door_checked):
 				hallucinating = not hallucinating
+				_switch_avatar()
 				_refresh_objects()
 				_reveal_dialogue()
 		KEY_E:
@@ -234,6 +236,49 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_drop_prop()
 			else:
 				_interact()
+
+func _switch_avatar() -> void:
+	if hallucinating:
+		original.velocity = Vector2.ZERO
+		original.set_physics_process(false)
+		original.set_process_input(false)
+		if apparition == null:
+			apparition = preload("res://player.tscn").instantiate() as CharacterBody2D
+			apparition.set("layer_switching_enabled", false)
+			apparition.scale = original.scale
+			add_child(apparition)
+			apparition.get_node("TextureRect").hide()
+			apparition_sprite = Sprite2D.new()
+			apparition_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			apparition.add_child(apparition_sprite)
+			apparition.position = original.position - Vector2(0, _player_half_size().y * 2.0 + 1.0)
+		apparition_rides = false
+		apparition.collision_layer = BODY_LAYER
+		apparition.collision_mask = 1 | BODY_LAYER | SHELF_LAYER
+		original.collision_mask = 1 | BODY_LAYER
+		apparition.show()
+		_set_active_avatar(apparition)
+		_show_avatar_texture()
+	else:
+		var base_shape := original.get_node("CollisionShape2D") as CollisionShape2D
+		var difference := player_shape.global_position - base_shape.global_position
+		var half := _player_half_size()
+		apparition_rides = absf(difference.x) < half.x * 2.0 and absf(difference.y + half.y * 2.0) < 3.0
+		riding_offset = apparition.position - original.position
+		apparition.velocity = Vector2.ZERO
+		apparition.set_physics_process(false)
+		apparition.set_process_input(false)
+		apparition.collision_layer = 0
+		apparition.collision_mask = 0
+		apparition.hide()
+		original.collision_mask = 1
+		_set_active_avatar(original)
+
+func _set_active_avatar(avatar: CharacterBody2D) -> void:
+	player = avatar
+	player_shape = avatar.get_node("CollisionShape2D") as CollisionShape2D
+	avatar.set_process_input(true)
+	avatar.set_physics_process(true)
 
 func _reveal_dialogue() -> void:
 	if not hallucinating:
@@ -281,7 +326,9 @@ func _interact() -> void:
 		"FrontDoor":
 			if not front_door_checked:
 				front_door_checked = true
-				hallucinating = false
+				if hallucinating:
+					hallucinating = false
+					_switch_avatar()
 				_refresh_objects()
 				_say(["Hero: Locked.", "Narrator: Of course it is. What about the basement? Maybe there’s a way out?"])
 		"CellarDoor":
@@ -438,14 +485,15 @@ func _refresh_objects() -> void:
 	match stage:
 		Stage.ROOM:
 			_show_prop("RoomKey", hallucinating and room_door_checked and not room_key)
+			$Objects/HallucinationShelves.visible = hallucinating
 		Stage.HALL:
-			_show_prop("HallChair", hallucinating or moved_props.has("HallChair"))
-			_show_prop("Cabinet", (hallucinating and front_door_checked) or moved_props.has("Cabinet"))
+			_show_prop("HallChair", hallucinating)
+			_show_prop("Cabinet", hallucinating and front_door_checked)
 			_show_prop("CellarDoor", hallucinating and front_door_checked)
 		Stage.BASEMENT:
-			_show_prop("CellarChair", hallucinating or moved_props.has("CellarChair"))
+			_show_prop("CellarChair", hallucinating)
 			_show_prop("Gate", not gate_open)
-			_show_prop("Ladder", hallucinating or moved_props.has("Ladder"))
+			_show_prop("Ladder", hallucinating)
 
 func _show_prop(object_name: String, enabled: bool) -> void:
 	var prop = objects.get_node(object_name)

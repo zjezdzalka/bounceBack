@@ -4,7 +4,8 @@
 [ext_resource type="PackedScene" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
 
-[ext_resource type="Texture2D" path="res://Art/House/Character.png" id="Character"]
+
+[ext_resource type="Texture2D" path="res://Art/House/Chair.png" id="Chair"]
 
 [node name="Basement" type="Node2D"]
 script = ExtResource("1")
@@ -47,11 +48,19 @@ text = "Schody na górę"
 horizontal_alignment = 1
 
 [node name="CellarChair" parent="Objects" instance=ExtResource("3")]
+show_placeholder = false
 visible = false
 position = Vector2(332, 567)
 size = Vector2(59, 66)
 color = Color(0.53,0.40,0.70,1)
 layers = 7
+
+[node name="Art" type="Sprite2D" parent="Objects/CellarChair"]
+texture_filter = 1
+scale = Vector2(4, 4)
+texture = ExtResource("Chair")
+region_enabled = true
+region_rect = Rect2(6, 7, 13, 17)
 
 [node name="Label" type="Label" parent="Objects/CellarChair"]
 z_index = 8
@@ -193,7 +202,6 @@ visible = false
 texture_filter = 1
 position = Vector2(0, 0)
 scale = Vector2(2.25, 2.25)
-texture = ExtResource("Character")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

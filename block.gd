@@ -19,6 +19,11 @@ extends StaticBody2D
 		layers = value
 		_refresh()
 
+@export var one_way := false:
+	set(value):
+		one_way = value
+		_refresh()
+
 func _ready() -> void:
 	add_to_group("blocks")
 	_refresh()
@@ -35,6 +40,7 @@ func _refresh() -> void:
 	var cs := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if cs and cs.shape is RectangleShape2D:
 		cs.shape.size = size
+		cs.one_way_collision = one_way
 
 @export var show_placeholder := true:
 	set(value):

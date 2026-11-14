@@ -56,7 +56,7 @@ layers = 7
 
 [node name="Bed" parent="Objects" unique_id=1785676080 instance=ExtResource("3")]
 z_index = 2
-position = Vector2(150, 564)
+position = Vector2(174, 564)
 collision_layer = 7
 collision_mask = 0
 size = Vector2(216, 72)
@@ -89,14 +89,14 @@ position = Vector2(-10, -3)
 polygon = PackedVector2Array(-98, 38, -80, 38, -80, 21, -72, 21, -71, 12, 91, 12, 91, 21, 100, 21, 100, 38, 119, 38, 118, -33, -48, -33, -48, -45, -88, -45, -88, -33, -98, -33)
 
 [node name="Nightstand" parent="Objects" unique_id=1825576246 instance=ExtResource("3")]
-z_index = 2
-position = Vector2(309, 563)
+z_index = -1
+position = Vector2(103, 551)
 scale = Vector2(1.1600013, 1.1600013)
 collision_layer = 7
 collision_mask = 0
 size = Vector2(77, 60)
 color = Color(0.32, 0.26, 0.23, 1)
-layers = 7
+layers = 0
 show_placeholder = false
 
 [node name="Label" type="Label" parent="Objects/Nightstand" unique_id=817577642]
@@ -110,12 +110,16 @@ horizontal_alignment = 1
 metadata/_edit_use_anchors_ = true
 
 [node name="LampOff" type="Sprite2D" parent="Objects/Nightstand" unique_id=1333087980]
+z_index = -1
+z_as_relative = false
 texture_filter = 1
 position = Vector2(0, -36)
 scale = Vector2(5.5, 5.5)
 texture = ExtResource("Nighttable_off")
 
 [node name="LampOn" type="Sprite2D" parent="Objects/Nightstand" unique_id=1801353893]
+z_index = -1
+z_as_relative = false
 visible = false
 texture_filter = 1
 position = Vector2(0, -36)
@@ -124,7 +128,7 @@ texture = ExtResource("Nighttable_on")
 
 [node name="Lamp" type="Node2D" parent="Objects" unique_id=1894446193]
 z_index = 1
-position = Vector2(309, 509)
+position = Vector2(103, 497)
 scale = Vector2(1.1600013, 1.1600013)
 
 [node name="Placeholder" type="ColorRect" parent="Objects/Lamp" unique_id=1102149410]
@@ -147,7 +151,7 @@ horizontal_alignment = 1
 
 [node name="Desk" type="Node2D" parent="Objects" unique_id=1508144047]
 z_index = 1
-position = Vector2(532, 574)
+position = Vector2(548, 574)
 scale = Vector2(0.7199976, 0.7199976)
 
 [node name="Label" type="Label" parent="Objects/Desk" unique_id=1864376467]
@@ -175,7 +179,7 @@ texture = ExtResource("Table_laptop_on")
 
 [node name="Laptop" type="Node2D" parent="Objects" unique_id=1451120378]
 z_index = 1
-position = Vector2(532, 505)
+position = Vector2(548, 505)
 scale = Vector2(0.7199976, 0.7199976)
 
 [node name="Placeholder" type="ColorRect" parent="Objects/Laptop" unique_id=1797442203]
@@ -198,7 +202,7 @@ horizontal_alignment = 1
 
 [node name="RoomDoor" type="Node2D" parent="Objects" unique_id=85730971]
 z_index = 1
-position = Vector2(970, 583)
+position = Vector2(1012, 583)
 scale = Vector2(0.36365625, 0.32547554)
 
 [node name="Art" type="Sprite2D" parent="Objects/RoomDoor" unique_id=1297833397]
@@ -221,7 +225,7 @@ horizontal_alignment = 1
 [node name="RoomKey" type="Node2D" parent="Objects" unique_id=587546045]
 visible = false
 z_index = 2
-position = Vector2(764, 548)
+position = Vector2(510, 186)
 
 [node name="Placeholder" type="ColorRect" parent="Objects/RoomKey" unique_id=143411491]
 offset_left = -13.0
@@ -230,6 +234,37 @@ offset_right = 13.0
 offset_bottom = 6.0
 mouse_filter = 2
 color = Color(0.98, 0.83, 0.36, 1)
+
+[node name="HallucinationShelves" type="Node2D" parent="Objects"]
+visible = false
+
+[node name="Shelf1" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+position = Vector2(381, 475)
+size = Vector2(120, 10)
+color = Color(0.06, 0.06, 0.08, 1)
+layers = 16
+one_way = true
+
+[node name="Shelf2" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+position = Vector2(1005, 397)
+size = Vector2(118, 10)
+color = Color(0.06, 0.06, 0.08, 1)
+layers = 16
+one_way = true
+
+[node name="Shelf3" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+position = Vector2(800, 306)
+size = Vector2(128, 10)
+color = Color(0.06, 0.06, 0.08, 1)
+layers = 16
+one_way = true
+
+[node name="Shelf4" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+position = Vector2(510, 225)
+size = Vector2(142, 10)
+color = Color(0.06, 0.06, 0.08, 1)
+layers = 16
+one_way = true
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1374781356]
 
@@ -274,5 +309,5 @@ theme_override_font_sizes/font_size = 17
 horizontal_alignment = 1
 
 [node name="Player" parent="." unique_id=937810438 instance=ExtResource("2")]
-position = Vector2(143.00002, 460)
+position = Vector2(174, 460)
 scale = Vector2(2.7032313, 2.7032313)

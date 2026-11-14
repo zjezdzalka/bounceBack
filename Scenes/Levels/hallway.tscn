@@ -4,12 +4,25 @@
 [ext_resource type="PackedScene" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
 
-[ext_resource type="Texture2D" path="res://Art/House/Character.png" id="Character"]
+
+[ext_resource type="Texture2D" path="res://Art/House/Chair.png" id="Chair"]
+[ext_resource type="Texture2D" path="res://Art/House/Corridor.png" id="Corridor"]
+[ext_resource type="Texture2D" path="res://Art/House/Door.png" id="Door"]
 
 [node name="Hallway" type="Node2D"]
 script = ExtResource("1")
 stage = 1
 next_scene = "res://Scenes/Levels/basement.tscn"
+
+[node name="CorridorBackground" type="Sprite2D" parent="."]
+z_index = -4
+texture_filter = 1
+position = Vector2(576, 300)
+scale = Vector2(5.76, 16.666667)
+texture = ExtResource("Corridor")
+region_enabled = true
+region_rect = Rect2(28, 2, 200, 36)
+modulate = Color(0.75, 0.75, 0.75, 1)
 
 [node name="Objects" type="Node2D" parent="."]
 
@@ -32,11 +45,19 @@ color = Color(0.19,0.22,0.27,1)
 layers = 7
 
 [node name="HallChair" parent="Objects" instance=ExtResource("3")]
+show_placeholder = false
 visible = false
 position = Vector2(350, 566)
 size = Vector2(56, 68)
 color = Color(0.53,0.40,0.70,1)
 layers = 7
+
+[node name="Art" type="Sprite2D" parent="Objects/HallChair"]
+texture_filter = 1
+scale = Vector2(4, 4)
+texture = ExtResource("Chair")
+region_enabled = true
+region_rect = Rect2(6, 7, 13, 17)
 
 [node name="Label" type="Label" parent="Objects/HallChair"]
 z_index = 8
@@ -68,13 +89,12 @@ horizontal_alignment = 1
 position = Vector2(1065, 541)
 z_index = 1
 
-[node name="Placeholder" type="ColorRect" parent="Objects/FrontDoor"]
-offset_left = -41.0
-offset_top = -59.0
-offset_right = 41.0
-offset_bottom = 59.0
-mouse_filter = 2
-color = Color(0.40,0.47,0.48,1)
+[node name="Art" type="Sprite2D" parent="Objects/FrontDoor"]
+texture_filter = 1
+scale = Vector2(3.5, 3.5)
+texture = ExtResource("Door")
+region_enabled = true
+region_rect = Rect2(10, 9, 20, 31)
 
 [node name="Label" type="Label" parent="Objects/FrontDoor"]
 z_index = 8
@@ -91,13 +111,12 @@ visible = false
 position = Vector2(825, 545)
 z_index = 1
 
-[node name="Placeholder" type="ColorRect" parent="Objects/CellarDoor"]
-offset_left = -38.5
-offset_top = -55.0
-offset_right = 38.5
-offset_bottom = 55.0
-mouse_filter = 2
-color = Color(0.38,0.54,0.68,1)
+[node name="Art" type="Sprite2D" parent="Objects/CellarDoor"]
+texture_filter = 1
+scale = Vector2(3.5, 3.5)
+texture = ExtResource("Door")
+region_enabled = true
+region_rect = Rect2(10, 9, 20, 31)
 
 [node name="Label" type="Label" parent="Objects/CellarDoor"]
 z_index = 8
@@ -141,7 +160,6 @@ visible = false
 texture_filter = 1
 position = Vector2(0, 0)
 scale = Vector2(2.25, 2.25)
-texture = ExtResource("Character")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
