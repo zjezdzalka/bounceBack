@@ -42,7 +42,6 @@ var held_side := 1.0
 
 const BODY_TEXTURE := preload("res://Art/House/Character_big.png")
 const APPARITION_TEXTURE := preload("res://Art/House/Character_glitched.png")
-const CHAR_HEIGHT := 54.0  # on-screen height of the character in pixels
 var moved_props: Dictionary = {}
 var room_door_checked := false
 var room_key := false
@@ -150,8 +149,10 @@ func _show_avatar_texture() -> void:
 	var tex := APPARITION_TEXTURE if player == apparition else BODY_TEXTURE
 	var sprite := apparition_sprite if player == apparition else player_sprite
 	sprite.texture = tex
-	# The 10x art is much larger than the old 24x24 sprite, so scale it to a fixed height.
-	sprite.scale = Vector2.ONE * (CHAR_HEIGHT / tex.get_height())
+	sprite.scale = Vector2.ONE / sprite.get_parent().global_scale
+	var shape := (player_shape as CollisionPolygon2D)
+	var foot_y := _collision_bounds(shape).end.y
+	sprite.global_position.y = foot_y - tex.get_height() / 2.0
 
 func _lie_down() -> void:
 	_show_avatar_texture()
@@ -161,7 +162,6 @@ func _lie_down() -> void:
 func _wake_up() -> void:
 	woke_up = true
 	player_sprite.rotation_degrees = 0.0
-	player_sprite.position.y = 0.0
 	_show_avatar_texture()
 
 func _update_story(delta: float) -> void:
@@ -259,13 +259,15 @@ func _switch_avatar() -> void:
 		if apparition == null:
 			apparition = preload("res://player.tscn").instantiate() as CharacterBody2D
 			apparition.set("layer_switching_enabled", false)
-			apparition.scale = original.scale
+			apparition.scale = original.scale * float(APPARITION_TEXTURE.get_height()) / BODY_TEXTURE.get_height()
 			add_child(apparition)
 			apparition.get_node("TextureRect").hide()
 			apparition_sprite = Sprite2D.new()
 			apparition_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			apparition.add_child(apparition_sprite)
-			apparition.position = original.position - Vector2(0, _player_half_size().y * 2.0 + 1.0)
+			apparition.position = original.position
+			var ghost_shape := apparition.get_node("CollisionPolygon2D") as CollisionPolygon2D
+			apparition.global_position.y += _player_bounds().position.y - _collision_bounds(ghost_shape).end.y - 1.0
 		apparition_rides = false
 		apparition.collision_layer = BODY_LAYER
 		apparition.collision_mask = 1 | BODY_LAYER | SHELF_LAYER
@@ -275,9 +277,10 @@ func _switch_avatar() -> void:
 		_show_avatar_texture()
 	else:
 		var base_shape := original.get_node("CollisionPolygon2D") as CollisionPolygon2D
-		var difference := player_shape.global_position - base_shape.global_position
-		var half := _player_half_size()
-		apparition_rides = absf(difference.x) < half.x * 2.0 and absf(difference.y + half.y * 2.0) < 3.0
+		var base_bounds := _collision_bounds(base_shape)
+		var ghost_bounds := _player_bounds()
+		var overlaps_x := ghost_bounds.position.x < base_bounds.end.x and ghost_bounds.end.x > base_bounds.position.x
+		apparition_rides = overlaps_x and absf(ghost_bounds.end.y - base_bounds.position.y) < 3.0
 		riding_offset = apparition.position - original.position
 		apparition.velocity = Vector2.ZERO
 		apparition.set_physics_process(false)
@@ -428,9 +431,12 @@ func _prop_query(prop: Node2D) -> PhysicsShapeQueryParameters2D:
 	return query
 
 func _player_bounds() -> Rect2:
+	return _collision_bounds(player_shape)
+
+func _collision_bounds(collision: CollisionPolygon2D) -> Rect2:
 	# Bounding box of the collision polygon in global coordinates (follows scale/position).
-	var xf := player_shape.global_transform
-	var points := player_shape.polygon
+	var xf := collision.global_transform
+	var points := collision.polygon
 	var bounds := Rect2(xf * points[0], Vector2.ZERO)
 	for point in points:
 		bounds = bounds.expand(xf * point)
