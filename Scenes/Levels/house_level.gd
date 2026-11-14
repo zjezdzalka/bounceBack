@@ -1,6 +1,6 @@
 extends Node2D
 
-enum Stage { ROOM, HALL, BASEMENT }
+enum Stage { ROOM, HALL, BASEMENT, LIGHTS }
 
 @export var stage: Stage
 @export_file("*.tscn") var next_scene: String
@@ -15,8 +15,9 @@ var bed_spawn := Vector2.ZERO
 var saved_apparition: Variant = null
 var back_door: Node2D
 var learned_hints: Dictionary = {}
-const ROOM_PATHS := ["res://Scenes/Levels/room.tscn", "res://Scenes/Levels/hallway.tscn", "res://Scenes/Levels/basement.tscn"]
-const SAVED_FIELDS := ["lamp_on", "laptop_checked", "wardrobe_hint_shown", "front_door_checked", "room_door_checked", "room_key", "lights_fixed", "has_key", "gate_open", "moved_props", "hints", "learned_hints", "learned_move", "learned_jump", "left_bed", "bed_line"]
+const PREVIOUS_ROOMS := {Stage.HALL: "room", Stage.LIGHTS: "hallway", Stage.BASEMENT: "hallway"}
+var wardrobe_raised := false
+const SAVED_FIELDS := ["wardrobe_raised", "lamp_on", "laptop_checked", "wardrobe_hint_shown", "front_door_checked", "room_door_checked", "room_key", "lights_fixed", "has_key", "gate_open", "moved_props", "hints", "learned_hints", "learned_move", "learned_jump", "left_bed", "bed_line"]
 const AVATAR_ART_SCALE := 1.25
 const BODY_LAYER := 8
 const SHELF_LAYER := 16
@@ -97,6 +98,14 @@ func _ready() -> void:
 	if clock_audio:
 		clock_audio.bus = "Sound Effects"
 		clock_audio.play()
+	if stage == Stage.LIGHTS:
+		hallucinating = true
+		_switch_avatar()
+		apparition.position = Vector2(480, 348)
+		apparition.position.y += 375.9 - _player_bounds().end.y
+		original.hide()
+		original.get_node("HeadPlatform").collision_layer = 0
+		_refresh_objects()
 	if visited:
 		return
 	match stage:
@@ -112,6 +121,9 @@ func _ready() -> void:
 				"Narrator: Why is your house such a mess?",
 				"Narrator: Front door’s right there. Just cross the hall. Or whatever’s left of it. Looks like something out of a horror movie."
 			])
+		Stage.LIGHTS:
+			if not lights_fixed:
+				_say(["Narrator: Find a way to get the lights working before you go down there. I’d hate for you to break your neck on the stairs."])
 		Stage.BASEMENT:
 			_say([
 				"Narrator: Looking at the rest of the house, I thought the basement would be scarier.",
@@ -189,8 +201,9 @@ func _update_story(delta: float) -> void:
 					_say([BED_LINES[bed_line]])
 					bed_line += 1
 		Stage.HALL:
-			if player.velocity.y < -1.0:
+			if not wardrobe_raised and player.velocity.y < -1.0:
 				_wardrobe_jump_hint()
+		Stage.LIGHTS:
 			if $Objects/Wires.visible and _near("Wires", 105.0):
 				_hint("wires", "Narrator: See those wires? Try connecting them. Maybe that’ll get the lights working.")
 		Stage.BASEMENT:
@@ -219,16 +232,19 @@ func _update_target() -> void:
 			elif _near("RoomDoor") and lamp_on and player == original:
 				target = "RoomDoor"
 		Stage.HALL:
-			if _can_grab("HallChair"):
-				target = "HallChair"
-			elif _can_grab("Cabinet", 51.0):
+			if hallucinating and wardrobe_raised and _near("WardrobePassage", 64.0):
+				target = "WardrobePassage"
+			elif _can_grab("Cabinet", 65.0):
 				target = "Cabinet"
-			elif $Objects/Wires.visible and _near("Wires", 52.0):
-				target = "Wires"
-			elif hallucinating and front_door_checked and _near("CellarDoor"):
+			elif _can_grab("HallChair"):
+				target = "HallChair"
+			elif _near("CellarDoor"):
 				target = "CellarDoor"
 			elif _near("FrontDoor"):
 				target = "FrontDoor"
+		Stage.LIGHTS:
+			if $Objects/Wires.visible and _near("Wires", 65.0):
+				target = "Wires"
 		Stage.BASEMENT:
 			if hallucinating and not has_key and _near("ToolCabinet", 76.0) and player.position.y < 465.0:
 				target = "ToolCabinet"
@@ -259,7 +275,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match true:
 		true when event.is_action_pressed("house_switch"):
-			if not dialogue.visible and held_prop.is_empty() and (stage != Stage.ROOM or room_door_checked):
+			if not dialogue.visible and held_prop.is_empty() and stage != Stage.LIGHTS and (stage != Stage.ROOM or room_door_checked):
 				hallucinating = not hallucinating
 				if not hallucinating:
 					HouseSession.learned_bounce_back = true
@@ -349,10 +365,8 @@ func _reveal_dialogue() -> void:
 			if not room_key:
 				_hint("first_shrink", "Narrator: I didn’t expect you to shrink that much. Might come in handy. You can squeeze into tighter spaces now.")
 		Stage.HALL:
-			if front_door_checked:
-				_hint("cellar_door", "Narrator: There it is. Who puts a cabinet in front of a door?")
-			else:
-				_hint("hall_chair", "Narrator: See that chair? Pull it up to the wardrobe. You can use it to climb over.")
+			if not wardrobe_raised:
+				_hint("cabinet_plate", "Narrator: Slide that cabinet onto the pressure plate. It might lift the wardrobe.")
 
 func _interact() -> void:
 	if target.is_empty():
@@ -363,7 +377,11 @@ func _interact() -> void:
 		return
 	match target:
 		"BackDoor":
-			_change_room(ROOM_PATHS[stage - 1], true)
+			if stage == Stage.LIGHTS and HouseSession.can_use_door():
+				var corridor: Dictionary = HouseSession.rooms.get("res://Scenes/Levels/hallway.tscn", {})
+				if not corridor.is_empty():
+					corridor["returning_from_niche"] = true
+			_change_room("res://Scenes/Levels/%s.tscn" % PREVIOUS_ROOMS[stage], true)
 		"Laptop":
 			laptop_checked = true
 			$Objects/Desk/LaptopOff.hide()
@@ -397,16 +415,21 @@ func _interact() -> void:
 					_switch_avatar()
 				_refresh_objects()
 				_say(["Hero: Locked.", "Narrator: Of course it is. What about the basement? Maybe there’s a way out?"])
+		"WardrobePassage":
+			if player == apparition and hallucinating and wardrobe_raised:
+				_change_room("res://Scenes/Levels/lights.tscn", false)
 		"CellarDoor":
-			if _cabinet_blocks_door():
-				_hint("blocked_door", "Narrator: Try sliding it aside. Same as the chair.")
-			elif not lights_fixed:
-				_hint("dark_stairs", "Narrator: Find a way to get the lights working before you go down there. I’d hate for you to break your neck on the stairs.")
-				_refresh_objects()
-			else:
+			if absf($Objects/Cabinet.position.x - $Objects/CellarDoor.position.x) < 64.0:
+				_hint("blocked_door", "Narrator: Slide that cabinet onto the pressure plate.")
+			elif lights_fixed:
 				_go_forward()
+			else:
+				_hint("dark_stairs", "Narrator: Find a way to get the lights working before you go down there. I’d hate for you to break your neck on the stairs.")
 		"Wires":
 			lights_fixed = true
+			var corridor: Dictionary = HouseSession.rooms.get("res://Scenes/Levels/hallway.tscn", {})
+			if not corridor.is_empty():
+				corridor["lights_fixed"] = true
 			_refresh_objects()
 		"ToolCabinet":
 			has_key = true
@@ -502,16 +525,21 @@ func _drop_prop() -> void:
 		_say(["Tu nie ma miejsca. Przesuń przedmiot i spróbuj ponownie."])
 		return
 	moved_props[held_prop] = true
+	if stage == Stage.HALL and held_prop == "Cabinet" and not wardrobe_raised:
+		if absf(prop.position.x - $Objects/PressurePlate.position.x) <= 27.0:
+			_raise_wardrobe()
 	learned_hints["drop"] = true
 	if held_prop == "Ladder":
 		climbed = false
 	held_prop = ""
 	_refresh_objects()
 
-func _cabinet_blocks_door() -> bool:
-	var cabinet = objects.get_node("Cabinet")
-	var door = objects.get_node("CellarDoor")
-	return absf(cabinet.position.x - door.position.x) < 65.0
+func _raise_wardrobe() -> void:
+	wardrobe_raised = true
+	var wardrobe := $Objects/Wardrobe as StaticBody2D
+	wardrobe.collision_layer = 0
+	create_tween().tween_property(wardrobe, "position:y", 294.0, 0.45)
+	$Objects/PressurePlate/Surface.color = Color("#67b178")
 
 func _ladder_ready() -> bool:
 	return moved_props.has("Ladder") and absf(objects.get_node("Ladder").position.x - 1035.0) < 44.0
@@ -594,10 +622,12 @@ func _refresh_objects() -> void:
 			$Objects/HallucinationShelves.visible = hallucinating
 		Stage.HALL:
 			_show_prop("HallChair", hallucinating)
-			_show_prop("Cabinet", hallucinating and front_door_checked)
-			_show_prop("CellarDoor", hallucinating and front_door_checked)
-			_show_prop("Wires", hallucinating and hints.has("dark_stairs") and not lights_fixed)
+			_show_prop("Cabinet", hallucinating)
 			$Objects/CellarDoor.modulate = Color.WHITE if lights_fixed else Color(0.58, 0.58, 0.64)
+			_show_prop("PressurePlate", hallucinating)
+			_show_prop("WardrobePassage", hallucinating and wardrobe_raised)
+		Stage.LIGHTS:
+			_show_prop("Wires", hallucinating and not lights_fixed)
 		Stage.BASEMENT:
 			_show_prop("CellarChair", hallucinating)
 			_show_prop("Gate", not gate_open)
@@ -657,6 +687,7 @@ func _floating_control_text() -> String:
 		"RoomDoor": "open the door" if room_key else "try the door",
 		"RoomKey": "pick up the key",
 		"FrontDoor": "try the front door",
+		"WardrobePassage": "enter the passage",
 		"CellarDoor": "enter the basement" if lights_fixed else "check the basement door",
 		"Wires": "connect the wires",
 		"ToolCabinet": "search the cabinet",
@@ -666,7 +697,7 @@ func _floating_control_text() -> String:
 	}.get(target, "")
 	if not action.is_empty() and not learned_hints.has(_interaction_hint_id()):
 		return _press("house_interact", action)
-	if hallucinating and not HouseSession.learned_bounce_back:
+	if hallucinating and stage != Stage.LIGHTS and not HouseSession.learned_bounce_back:
 		return _press("house_switch", "bounce back to reality")
 	return ""
 
@@ -705,6 +736,15 @@ func _create_back_door() -> void:
 	back_door.name = "BackDoor"
 	objects.add_child(back_door)
 	back_door.position = Vector2(original.position.x, original.position.y - 24.0)
+	if stage == Stage.LIGHTS:
+		back_door.position = Vector2(450, 355)
+		var opening := ColorRect.new()
+		opening.position = Vector2(-12, -20)
+		opening.size = Vector2(24, 40)
+		opening.color = Color("#385965")
+		opening.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		back_door.add_child(opening)
+		return
 	var sprite := Sprite2D.new()
 	sprite.texture = preload("res://Art/House/Door_big.png")
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -719,6 +759,7 @@ func _save_progress() -> void:
 		if objects.has_node(name):
 			positions[name] = objects.get_node(name).position
 	record["positions"] = positions
+	record["original_position"] = original.position
 	record["apparition"] = apparition.position if apparition != null else saved_apparition
 	HouseSession.rooms[scene_file_path] = record.duplicate(true)
 
@@ -739,8 +780,15 @@ func _restore_progress() -> bool:
 		$Objects/Desk/LaptopOff.visible = not laptop_checked
 		$Objects/Desk/LaptopOn.visible = laptop_checked
 		darkness.hide()
-	if backwards:
-		var exit_name := "RoomDoor" if stage == Stage.ROOM else "CellarDoor"
+	if stage == Stage.HALL and wardrobe_raised:
+		$Objects/Wardrobe.position.y = 294.0
+		$Objects/Wardrobe.collision_layer = 0
+		$Objects/PressurePlate/Surface.color = Color("#67b178")
+	if record.get("returning_from_niche", false):
+		original.position = record["original_position"]
+		HouseSession.rooms[scene_file_path].erase("returning_from_niche")
+	elif backwards:
+		var exit_name: String = {Stage.ROOM: "RoomDoor", Stage.HALL: "CellarDoor"}[stage]
 		original.position.x = objects.get_node(exit_name).position.x
 		original.position.y = 600.0 - _player_half_size().y - 6.0
 	return true

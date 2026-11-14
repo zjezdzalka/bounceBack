@@ -6,11 +6,12 @@
 [ext_resource type="Texture2D" uid="uid://c5aes3aejhqgb" path="res://Art/House/Character.png" id="Character"]
 
 
-[ext_resource type="Texture2D" path="res://Art/House/Chair_big.png" id="Chair"]
 [ext_resource type="Texture2D" path="res://Art/House/Corridor.png" id="Corridor"]
 [ext_resource type="Texture2D" path="res://Art/House/Door_big.png" id="Door"]
 
 [ext_resource type="Texture2D" path="res://Art/House/Cabinet_big.png" id="Cabinet_big"]
+
+[ext_resource type="Texture2D" path="res://Art/House/Chair_big.png" id="Chair"]
 
 [node name="Hallway" type="Node2D" unique_id=2054935274]
 script = ExtResource("1")
@@ -56,31 +57,6 @@ size = Vector2(24, 600)
 color = Color(0.19, 0.22, 0.27, 1)
 layers = 7
 
-[node name="HallChair" parent="Objects" unique_id=1252148156 instance=ExtResource("3")]
-show_placeholder = false
-visible = false
-z_index = 2
-position = Vector2(350, 566)
-collision_layer = 7
-collision_mask = 0
-size = Vector2(56, 68)
-color = Color(0.53, 0.4, 0.7, 1)
-layers = 7
-
-[node name="Art" type="Sprite2D" parent="Objects/HallChair"]
-texture_filter = 1
-scale = Vector2(1.4, 1.133333)
-texture = ExtResource("Chair")
-
-[node name="Label" type="Label" parent="Objects/HallChair" unique_id=808958788]
-z_index = 8
-offset_left = -90.0
-offset_top = -57.0
-offset_right = 90.0
-theme_override_font_sizes/font_size = 16
-text = "Krzesło"
-horizontal_alignment = 1
-
 [node name="Wardrobe" parent="Objects" unique_id=1629208816 instance=ExtResource("3")]
 z_index = 2
 position = Vector2(588, 524)
@@ -119,27 +95,6 @@ theme_override_font_sizes/font_size = 16
 text = "Drzwi frontowe"
 horizontal_alignment = 1
 
-[node name="CellarDoor" type="Node2D" parent="Objects" unique_id=1855769705]
-visible = false
-z_index = 1
-position = Vector2(825, 545)
-
-[node name="Art" type="Sprite2D" parent="Objects/CellarDoor"]
-texture_filter = 1
-scale = Vector2(0.875, 0.887097)
-texture = ExtResource("Door")
-region_enabled = true
-region_rect = Rect2(24, 4, 80, 124)
-
-[node name="Label" type="Label" parent="Objects/CellarDoor" unique_id=1309037884]
-z_index = 8
-offset_left = -90.0
-offset_top = -78.0
-offset_right = 90.0
-theme_override_font_sizes/font_size = 16
-text = "Do piwnicy"
-horizontal_alignment = 1
-
 [node name="Cabinet" parent="Objects" unique_id=472917172 instance=ExtResource("3")]
 visible = false
 z_index = 2
@@ -166,20 +121,74 @@ theme_override_font_sizes/font_size = 16
 text = "Szafka"
 horizontal_alignment = 1
 
-[node name="Wires" type="Node2D" parent="Objects"]
+[node name="HallChair" parent="Objects" unique_id=1252148156 instance=ExtResource("3")]
+show_placeholder = false
 visible = false
-position = Vector2(720, 553)
 z_index = 2
+position = Vector2(350, 566)
+collision_layer = 7
+collision_mask = 0
+size = Vector2(56, 68)
+color = Color(0.53, 0.4, 0.7, 1)
+layers = 7
 
-[node name="Red" type="Line2D" parent="Objects/Wires"]
-points = PackedVector2Array(-14, -12, -6, -3, -6, 8)
-width = 3.0
-default_color = Color(0.88, 0.25, 0.27, 1)
+[node name="Art" type="Sprite2D" parent="Objects/HallChair"]
+texture_filter = 1
+scale = Vector2(1.4, 1.133333)
+texture = ExtResource("Chair")
 
-[node name="Blue" type="Line2D" parent="Objects/Wires"]
-points = PackedVector2Array(14, -12, 6, -3, 6, 8)
-width = 3.0
-default_color = Color(0.33, 0.65, 1, 1)
+[node name="Label" type="Label" parent="Objects/HallChair" unique_id=808958788]
+z_index = 8
+offset_left = -90.0
+offset_top = -57.0
+offset_right = 90.0
+theme_override_font_sizes/font_size = 16
+text = "Krzesło"
+horizontal_alignment = 1
+
+[node name="CellarDoor" type="Node2D" parent="Objects" unique_id=1855769705]
+z_index = 1
+position = Vector2(825, 545)
+
+[node name="Art" type="Sprite2D" parent="Objects/CellarDoor"]
+texture_filter = 1
+scale = Vector2(3.5, 3.5)
+texture = ExtResource("Door")
+region_enabled = true
+region_rect = Rect2(10, 9, 20, 31)
+
+[node name="Label" type="Label" parent="Objects/CellarDoor" unique_id=1309037884]
+z_index = 8
+offset_left = -90.0
+offset_top = -78.0
+offset_right = 90.0
+theme_override_font_sizes/font_size = 16
+text = "Do piwnicy"
+horizontal_alignment = 1
+
+[node name="PressurePlate" type="Node2D" parent="Objects"]
+visible = false
+position = Vector2(715, 596)
+
+[node name="Surface" type="ColorRect" parent="Objects/PressurePlate"]
+offset_left = -40
+offset_right = 40
+offset_top = -4
+offset_bottom = 4
+mouse_filter = 2
+color = Color(0.8, 0.54, 0.2, 1)
+
+[node name="WardrobePassage" type="Node2D" parent="Objects"]
+visible = false
+position = Vector2(588, 574)
+
+[node name="Surface" type="ColorRect" parent="Objects/WardrobePassage"]
+offset_left = -22
+offset_right = 22
+offset_top = -26
+offset_bottom = 26
+mouse_filter = 2
+color = Color(0.31, 0.64, 0.72, 0.85)
 
 [node name="Player" parent="." unique_id=2016173304 instance=ExtResource("2")]
 position = Vector2(103, 565)

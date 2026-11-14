@@ -1,0 +1,114 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://ckpdu7ojph7eu" path="res://Scenes/Levels/house_level.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://dmg0ukd1sp2um" path="res://player.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://block.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://c5aes3aejhqgb" path="res://Art/House/Character.png" id="Character"]
+
+
+[ext_resource type="Texture2D" path="res://Art/House/Corridor.png" id="Corridor"]
+[ext_resource type="Texture2D" path="res://Art/House/Door_big.png" id="Door"]
+
+
+[node name="Lights" type="Node2D" unique_id=2054935274]
+script = ExtResource("1")
+stage = 3
+
+[node name="NicheWall" type="ColorRect" parent="."]
+z_index = -1
+offset_left = 438.0
+offset_top = 286.0
+offset_right = 714.0
+offset_bottom = 376.0
+mouse_filter = 2
+color = Color(0.15, 0.17, 0.21, 1)
+
+[node name="Objects" type="Node2D" parent="." unique_id=661144629]
+
+[node name="Ceiling" parent="Objects" instance=ExtResource("3")]
+position = Vector2(576, 275)
+size = Vector2(276, 22)
+layers = 7
+
+[node name="Floor" parent="Objects" unique_id=674686023 instance=ExtResource("3")]
+z_index = 2
+position = Vector2(576, 387)
+collision_layer = 7
+collision_mask = 0
+size = Vector2(276, 22)
+color = Color(0.31, 0.34, 0.39, 1)
+layers = 7
+
+[node name="LeftWall" parent="Objects" unique_id=2143406224 instance=ExtResource("3")]
+z_index = 2
+position = Vector2(426, 342)
+collision_layer = 7
+collision_mask = 0
+size = Vector2(24, 112)
+color = Color(0.19, 0.22, 0.27, 1)
+layers = 7
+
+[node name="RightWall" parent="Objects" unique_id=1370890372 instance=ExtResource("3")]
+z_index = 2
+position = Vector2(726, 342)
+collision_layer = 7
+collision_mask = 0
+size = Vector2(24, 112)
+color = Color(0.19, 0.22, 0.27, 1)
+layers = 7
+
+[node name="Wires" type="Node2D" parent="Objects"]
+visible = false
+position = Vector2(665, 349)
+z_index = 2
+
+[node name="Red" type="Line2D" parent="Objects/Wires"]
+points = PackedVector2Array(-14, -12, -6, -3, -6, 8)
+width = 3.0
+default_color = Color(0.88, 0.25, 0.27, 1)
+
+[node name="Blue" type="Line2D" parent="Objects/Wires"]
+points = PackedVector2Array(14, -12, 6, -3, 6, 8)
+width = 3.0
+default_color = Color(0.33, 0.65, 1, 1)
+
+[node name="Player" parent="." unique_id=2016173304 instance=ExtResource("2")]
+position = Vector2(480, 338)
+scale = Vector2(1.25, 1.25)
+layer_switching_enabled = false
+
+[node name="TextureRect" parent="Player" index="2" unique_id=982247166]
+visible = false
+
+[node name="HouseCharacter" type="Sprite2D" parent="Player" unique_id=2118400479]
+texture_filter = 1
+scale = Vector2(2.25, 2.25)
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1491090558]
+
+[node name="Darkness" type="ColorRect" parent="HUD" unique_id=1302726648]
+visible = false
+offset_right = 1152.0
+offset_bottom = 752.0
+mouse_filter = 2
+color = Color(0.01, 0.015, 0.025, 0.84)
+
+[node name="TextBackground" type="ColorRect" parent="HUD" unique_id=1522989736]
+offset_top = 622.0
+offset_right = 1152.0
+offset_bottom = 752.0
+mouse_filter = 2
+color = Color(0.04, 0.05, 0.07, 0.9)
+
+[node name="Dialogue" type="Label" parent="HUD" unique_id=2002660431]
+visible = false
+offset_left = 80.0
+offset_top = 630.0
+offset_right = 1072.0
+offset_bottom = 691.0
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[editable path="Player"]
