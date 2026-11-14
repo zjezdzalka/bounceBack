@@ -53,7 +53,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	# Jump with Space (W / S now change the z-index)
-	if Input.is_physical_key_pressed(KEY_SPACE) and is_on_floor():
+	var jump := Input.is_physical_key_pressed(KEY_SPACE) \
+		or Input.is_physical_key_pressed(KEY_UP) \
+		or Input.is_physical_key_pressed(KEY_K)
+	if jump and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 
 	move_and_slide()
