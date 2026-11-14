@@ -15,6 +15,7 @@ const STEP_HEIGHT := 14.0   # biggest ledge he walks onto without jumping (pixel
 
 var z := 1   # current z-index (default 1)
 var coyote_timer := 0.0
+var can_jump := true   # the level turns this off while the hero is holding an object
 
 func _ready() -> void:
 	floor_snap_length = STEP_HEIGHT + 4.0   # keeps him glued to the ground after a step
@@ -65,7 +66,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	# Jump with Space (W / S now change the z-index)
-	if Input.is_physical_key_pressed(KEY_SPACE) and coyote_timer > 0.0:
+	if can_jump and Input.is_physical_key_pressed(KEY_SPACE) and coyote_timer > 0.0:
 		velocity.y = JUMP_VELOCITY
 		coyote_timer = 0.0
 

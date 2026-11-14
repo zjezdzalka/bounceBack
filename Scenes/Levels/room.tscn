@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://ckpdu7ojph7eu" path="res://Scenes/Levels/house_level.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://dmg0ukd1sp2um" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://dh26rm24nmc40" path="res://Art/House/Clock.png" id="10_u3ghy"]
+[ext_resource type="AudioStream" uid="uid://dajs3maeikga7" path="res://Audio/Room/alarm-clock-ticking_60bpm2.wav" id="11_u3ghy"]
 [ext_resource type="Texture2D" uid="uid://b7ys3pxxcfhkb" path="res://Art/House/bed10x_nopillow.png" id="Bed"]
 [ext_resource type="Texture2D" uid="uid://jwers2rom4by" path="res://Art/House/Nighttable_off.png" id="Nighttable_off"]
 [ext_resource type="Texture2D" uid="uid://dal4ta6ni2wyt" path="res://Art/House/Nighttable_on.png" id="Nighttable_on"]
@@ -204,7 +206,7 @@ scale = Vector2(0.36365625, 0.32547554)
 [node name="Art" type="Sprite2D" parent="Objects/RoomDoor" unique_id=1297833397]
 texture_filter = 1
 position = Vector2(0, -264.22885)
-scale = Vector2(14.37675, 19.468515)
+scale = Vector2(16.79661, 19.468515)
 texture = ExtResource("Starting_room")
 region_enabled = true
 region_rect = Rect2(77, 5, 20, 32)
@@ -230,6 +232,13 @@ offset_right = 13.0
 offset_bottom = 6.0
 mouse_filter = 2
 color = Color(0.98, 0.83, 0.36, 1)
+
+[node name="Clock" type="Node2D" parent="Objects" unique_id=990623694]
+
+[node name="Sprite2D" type="Sprite2D" parent="Objects/Clock" unique_id=2053505668]
+position = Vector2(749, 448)
+scale = Vector2(1.7999976, 1.7999976)
+texture = ExtResource("10_u3ghy")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1374781356]
 
@@ -276,3 +285,13 @@ horizontal_alignment = 1
 [node name="Player" parent="." unique_id=937810438 instance=ExtResource("2")]
 position = Vector2(143.00002, 460)
 scale = Vector2(2.7032313, 2.7032313)
+
+[node name="Ticking" type="AudioStreamPlayer2D" parent="." unique_id=194859210]
+position = Vector2(750, 440)
+scale = Vector2(20.64, 1)
+stream = ExtResource("11_u3ghy")
+volume_db = -3.328
+autoplay = true
+max_distance = 673.0
+attenuation = 0.3045949
+panning_strength = 1.01
