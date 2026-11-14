@@ -181,9 +181,7 @@ func _update_target() -> void:
 	target = ""
 	match stage:
 		Stage.ROOM:
-			if _near("Lamp", 112.0) and not lamp_on:
-				target = "Lamp"
-			elif _near("RoomKey", 65.0) and hallucinating and room_door_checked and not room_key:
+			if _near("RoomKey", 65.0) and hallucinating and room_door_checked and not room_key:
 				target = "RoomKey"
 			elif _near("Laptop") and lamp_on and not laptop_checked:
 				target = "Laptop"
@@ -255,16 +253,6 @@ func _interact() -> void:
 		_grab_prop()
 		return
 	match target:
-		"Lamp":
-			lamp_on = true
-			$Objects/Nightstand/LampOff.hide()
-			$Objects/Nightstand/LampOn.show()
-			darkness.hide()
-			_say([
-				"Narrator: You can hear me. That’s reason enough to get help. Even if I’m trying to help you.",
-				"Hero: Maybe I should listen to you this time.",
-				"Narrator: Good. Your laptop’s on the desk. Look up the nearest hospital."
-			])
 		"Laptop":
 			laptop_checked = true
 			$Objects/Desk/LaptopOff.hide()
@@ -419,6 +407,17 @@ func _say(text_lines: Array[String]) -> void:
 	player.set_physics_process(false)
 	_advance_dialogue()
 
+func _turn_on_lamp() -> void:
+	lamp_on = true
+	$Objects/Nightstand/LampOff.hide()
+	$Objects/Nightstand/LampOn.show()
+	darkness.hide()
+	_say([
+		"Narrator: You can hear me. That’s reason enough to get help. Even if I’m trying to help you.",
+		"Hero: Maybe I should listen to you this time.",
+		"Narrator: Good. Your laptop’s on the desk. Look up the nearest hospital."
+	])
+
 func _advance_dialogue() -> void:
 	if not lines.is_empty():
 		dialogue.text = lines.pop_front()
@@ -428,7 +427,10 @@ func _advance_dialogue() -> void:
 		return
 	dialogue.hide()
 	if not woke_up:
-		_wake_up()  # the 3rd press of E ends the intro dialogue
+		if not lamp_on:
+			_turn_on_lamp()
+			return
+		_wake_up()
 	player.set_process_input(true)
 	player.set_physics_process(true)
 
@@ -455,7 +457,7 @@ func _action_label() -> String:
 	if target in MOVABLE:
 		return "Chwyć"
 	return {
-		"Lamp": "Włącz lampkę", "Laptop": "Sprawdź laptopa", "RoomDoor": "Sprawdź drzwi",
+		"Laptop": "Sprawdź laptopa", "RoomDoor": "Sprawdź drzwi",
 		"RoomKey": "Podnieś klucz", "FrontDoor": "Sprawdź drzwi frontowe",
 		"CellarDoor": "Sprawdź drzwi do piwnicy", "ToolCabinet": "Przeszukaj szafkę",
 		"Gate": "Sprawdź kraty", "Climb": "Wespnij się po drabinie",
