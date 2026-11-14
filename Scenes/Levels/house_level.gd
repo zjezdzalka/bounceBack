@@ -19,6 +19,14 @@ const SHELF_LAYER := 16
 @onready var dialogue: Label = $HUD/Dialogue
 @onready var darkness: ColorRect = $HUD/Darkness
 
+@onready var clock_audio := get_node_or_null("Ticking") as AudioStreamPlayer2D
+
+func _find_clock_audio() -> AudioStreamPlayer2D:
+	# First AudioStreamPlayer2D anywhere in this scene, whatever it's named or nested under.
+	for node in find_children("*", "AudioStreamPlayer2D", true, false):
+		return node as AudioStreamPlayer2D
+	return null
+
 var woke_up := true
 var hallucinating := false
 var lamp_on := false
@@ -29,7 +37,7 @@ var has_key := false
 var gate_open := false
 var held_prop := ""
 var held_side := 1.0
-@onready var player_shape: CollisionShape2D = $Player/CollisionShape2D
+@onready var player_shape: CollisionPolygon2D = $Player/CollisionPolygon2D
 @onready var player_sprite: Sprite2D = _find_player_sprite()
 
 const BODY_TEXTURE := preload("res://Art/House/Character_big.png")
@@ -70,6 +78,8 @@ func _ready() -> void:
 			label.hide()
 	original.collision_layer = BODY_LAYER
 	_refresh_objects()
+	if clock_audio:
+		clock_audio.play()       
 	match stage:
 		Stage.ROOM:
 			darkness.show()
@@ -92,9 +102,13 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if apparition_rides and not hallucinating:
 		apparition.position = original.position + riding_offset
-	_follow_player()
 
+	player.can_jump = held_prop.is_empty()  # no jumping while holding an object
+	_follow_player()
+	
 func _process(delta: float) -> void:
+	if clock_audio and not clock_audio.playing:
+		clock_audio.play()
 	if woke_up:
 		if not is_zero_approx(player.velocity.x):
 			var sprite := apparition_sprite if player == apparition else player_sprite
@@ -141,8 +155,8 @@ func _show_avatar_texture() -> void:
 
 func _lie_down() -> void:
 	_show_avatar_texture()
-	player_sprite.rotation_degrees = -90.0  # lying on the other side
-	player_sprite.position.y = 12.0
+	player_sprite.rotation_degrees = -70.0  # lying on the other side
+	player_sprite.position.y = 16.0
 
 func _wake_up() -> void:
 	woke_up = true
@@ -162,10 +176,7 @@ func _update_story(delta: float) -> void:
 					_say([BED_LINES[bed_line]])
 					bed_line += 1
 		Stage.HALL:
-			if not wardrobe_hint_shown and not moved_props.has("HallChair"):
-				if player.position.x > 410.0 and player.position.x < 530.0 and player.velocity.y < 0.0:
-					wardrobe_hint_shown = true
-					_say(["Narrator: Yeah, you’re not jumping that. Try using that superpower of yours again. Maybe you’ll see something you can use."])
+			pass  # the wardrobe jump hint is handled on the Space key press (see _unhandled_key_input)
 		Stage.BASEMENT:
 			if player.position.x > 980.0 and player.velocity.y < 0.0 and not climbed:
 				_hint("high_window", "Narrator: Bit high, isn’t it? Look around. There’s got to be something you can climb.")
@@ -229,6 +240,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_switch_avatar()
 				_refresh_objects()
 				_reveal_dialogue()
+		KEY_SPACE:
+			if stage == Stage.HALL and not dialogue.visible:
+				_wardrobe_jump_hint()
 		KEY_E:
 			if dialogue.visible:
 				_advance_dialogue()
@@ -260,7 +274,7 @@ func _switch_avatar() -> void:
 		_set_active_avatar(apparition)
 		_show_avatar_texture()
 	else:
-		var base_shape := original.get_node("CollisionShape2D") as CollisionShape2D
+		var base_shape := original.get_node("CollisionPolygon2D") as CollisionPolygon2D
 		var difference := player_shape.global_position - base_shape.global_position
 		var half := _player_half_size()
 		apparition_rides = absf(difference.x) < half.x * 2.0 and absf(difference.y + half.y * 2.0) < 3.0
@@ -276,9 +290,20 @@ func _switch_avatar() -> void:
 
 func _set_active_avatar(avatar: CharacterBody2D) -> void:
 	player = avatar
-	player_shape = avatar.get_node("CollisionShape2D") as CollisionShape2D
+	player_shape = avatar.get_node("CollisionPolygon2D") as CollisionPolygon2D
 	avatar.set_process_input(true)
 	avatar.set_physics_process(true)
+
+func _wardrobe_jump_hint() -> void:
+	if wardrobe_hint_shown or moved_props.has("HallChair"):
+		return
+	var wardrobe: Node2D = objects.get_node("Wardrobe")
+	var half_width: float = wardrobe.get("size").x / 2.0
+	var left: float = wardrobe.position.x - half_width
+	# Pressing Space anywhere in the ~220 px in front of the wardrobe counts as trying to jump it.
+	if player.position.x > left - 220.0 and player.position.x < left + half_width * 2.0:
+		wardrobe_hint_shown = true
+		_say(["Narrator: Yeah, you’re not jumping that. Try using that superpower of yours again. Maybe you’ll see something you can use."])
 
 func _reveal_dialogue() -> void:
 	if not hallucinating:
@@ -376,11 +401,18 @@ func _follow_player() -> void:
 	var query := _prop_query(prop)
 	var half_width: float = query.shape.size.x / 2.0
 	var offset := (half_width + _player_half_size().x + 5.0) * held_side
-	var destination := clampf(player.position.x + offset, 24.0 + half_width, 1128.0 - half_width)
+	var wanted: float = player.position.x + offset
+	var destination := clampf(wanted, 24.0 + half_width, 1128.0 - half_width)
 	var motion := Vector2(destination - prop.position.x, 0.0)
 	query.motion = motion
 	var safe_fraction := get_world_2d().direct_space_state.cast_motion(query)[0]
 	prop.position.x += motion.x * safe_fraction
+	# The box could not follow all the way (wall, object, room edge): stop the player too,
+	# so he can't walk through the box he is holding.
+	if absf(prop.position.x - wanted) > 0.5:
+		var limit: float = prop.position.x - offset
+		if absf(player.position.x - limit) < 24.0:  # small correction only, never a teleport
+			player.position.x = limit
 
 func _prop_query(prop: Node2D) -> PhysicsShapeQueryParameters2D:
 	var size: Vector2 = prop.get("size") if prop is StaticBody2D else Vector2(46, 266)
@@ -395,18 +427,23 @@ func _prop_query(prop: Node2D) -> PhysicsShapeQueryParameters2D:
 		query.exclude = [objects.get_node("Sill").get_rid()]
 	return query
 
+func _player_bounds() -> Rect2:
+	# Bounding box of the collision polygon in global coordinates (follows scale/position).
+	var xf := player_shape.global_transform
+	var points := player_shape.polygon
+	var bounds := Rect2(xf * points[0], Vector2.ZERO)
+	for point in points:
+		bounds = bounds.expand(xf * point)
+	return bounds
+
 func _player_half_size() -> Vector2:
-	var shape := player_shape.shape as RectangleShape2D
-	return shape.size * player_shape.global_scale.abs() / 2.0
+	return _player_bounds().size / 2.0
 
 func _drop_prop() -> void:
 	var prop: Node2D = objects.get_node(held_prop)
 	var query := _prop_query(prop)
 	var size: Vector2 = query.shape.size + Vector2(0, 2)
-	var half_player := _player_half_size()
-	var overlaps_player := Rect2(prop.global_position - size / 2.0, size).intersects(
-		Rect2(player_shape.global_position - half_player, half_player * 2.0)
-	)
+	var overlaps_player := Rect2(prop.global_position - size / 2.0, size).intersects(_player_bounds())
 	if overlaps_player or not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
 		_say(["Tu nie ma miejsca. Przesuń przedmiot i spróbuj ponownie."])
 		return

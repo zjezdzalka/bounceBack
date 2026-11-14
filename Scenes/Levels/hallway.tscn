@@ -1,15 +1,16 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cwrpelv0mg4gn"]
 
-[ext_resource type="Script" path="res://Scenes/Levels/house_level.gd" id="1"]
-[ext_resource type="PackedScene" path="res://player.tscn" id="2"]
+[ext_resource type="Script" uid="uid://ckpdu7ojph7eu" path="res://Scenes/Levels/house_level.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://dmg0ukd1sp2um" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://c5aes3aejhqgb" path="res://Art/House/Character.png" id="Character"]
 
 
 [ext_resource type="Texture2D" path="res://Art/House/Chair.png" id="Chair"]
 [ext_resource type="Texture2D" path="res://Art/House/Corridor.png" id="Corridor"]
 [ext_resource type="Texture2D" path="res://Art/House/Door.png" id="Door"]
 
-[node name="Hallway" type="Node2D"]
+[node name="Hallway" type="Node2D" unique_id=2054935274]
 script = ExtResource("1")
 stage = 1
 next_scene = "res://Scenes/Levels/basement.tscn"
@@ -24,32 +25,44 @@ region_enabled = true
 region_rect = Rect2(28, 2, 200, 36)
 modulate = Color(0.75, 0.75, 0.75, 1)
 
-[node name="Objects" type="Node2D" parent="."]
+[node name="Objects" type="Node2D" parent="." unique_id=661144629]
 
-[node name="Floor" parent="Objects" instance=ExtResource("3")]
+[node name="Floor" parent="Objects" unique_id=674686023 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(576, 625)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(1152, 50)
-color = Color(0.31,0.34,0.39,1)
+color = Color(0.31, 0.34, 0.39, 1)
 layers = 7
 
-[node name="LeftWall" parent="Objects" instance=ExtResource("3")]
+[node name="LeftWall" parent="Objects" unique_id=2143406224 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(12, 300)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(24, 600)
-color = Color(0.19,0.22,0.27,1)
+color = Color(0.19, 0.22, 0.27, 1)
 layers = 7
 
-[node name="RightWall" parent="Objects" instance=ExtResource("3")]
+[node name="RightWall" parent="Objects" unique_id=1370890372 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(1140, 300)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(24, 600)
-color = Color(0.19,0.22,0.27,1)
+color = Color(0.19, 0.22, 0.27, 1)
 layers = 7
 
-[node name="HallChair" parent="Objects" instance=ExtResource("3")]
+[node name="HallChair" parent="Objects" unique_id=1252148156 instance=ExtResource("3")]
 show_placeholder = false
 visible = false
+z_index = 2
 position = Vector2(350, 566)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(56, 68)
-color = Color(0.53,0.40,0.70,1)
+color = Color(0.53, 0.4, 0.7, 1)
 layers = 7
 
 [node name="Art" type="Sprite2D" parent="Objects/HallChair"]
@@ -59,35 +72,36 @@ texture = ExtResource("Chair")
 region_enabled = true
 region_rect = Rect2(6, 7, 13, 17)
 
-[node name="Label" type="Label" parent="Objects/HallChair"]
+[node name="Label" type="Label" parent="Objects/HallChair" unique_id=808958788]
 z_index = 8
 offset_left = -90.0
 offset_top = -57.0
 offset_right = 90.0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 text = "Krzesło"
 horizontal_alignment = 1
 
-[node name="Wardrobe" parent="Objects" instance=ExtResource("3")]
+[node name="Wardrobe" parent="Objects" unique_id=1629208816 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(588, 524)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(122, 152)
-color = Color(0.42,0.30,0.24,1)
+color = Color(0.42, 0.3, 0.24, 1)
 layers = 7
 
-[node name="Label" type="Label" parent="Objects/Wardrobe"]
+[node name="Label" type="Label" parent="Objects/Wardrobe" unique_id=279287459]
 z_index = 8
 offset_left = -90.0
 offset_top = -99.0
 offset_right = 90.0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 text = "Przewrócona szafa"
 horizontal_alignment = 1
 
-[node name="FrontDoor" type="Node2D" parent="Objects"]
-position = Vector2(1065, 541)
+[node name="FrontDoor" type="Node2D" parent="Objects" unique_id=1726322444]
 z_index = 1
+position = Vector2(1065, 541)
 
 [node name="Art" type="Sprite2D" parent="Objects/FrontDoor"]
 texture_filter = 1
@@ -96,20 +110,19 @@ texture = ExtResource("Door")
 region_enabled = true
 region_rect = Rect2(10, 9, 20, 31)
 
-[node name="Label" type="Label" parent="Objects/FrontDoor"]
+[node name="Label" type="Label" parent="Objects/FrontDoor" unique_id=1897334091]
 z_index = 8
 offset_left = -90.0
 offset_top = -82.0
 offset_right = 90.0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 text = "Drzwi frontowe"
 horizontal_alignment = 1
 
-[node name="CellarDoor" type="Node2D" parent="Objects"]
+[node name="CellarDoor" type="Node2D" parent="Objects" unique_id=1855769705]
 visible = false
-position = Vector2(825, 545)
 z_index = 1
+position = Vector2(825, 545)
 
 [node name="Art" type="Sprite2D" parent="Objects/CellarDoor"]
 texture_filter = 1
@@ -118,66 +131,63 @@ texture = ExtResource("Door")
 region_enabled = true
 region_rect = Rect2(10, 9, 20, 31)
 
-[node name="Label" type="Label" parent="Objects/CellarDoor"]
+[node name="Label" type="Label" parent="Objects/CellarDoor" unique_id=1309037884]
 z_index = 8
 offset_left = -90.0
 offset_top = -78.0
 offset_right = 90.0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 text = "Do piwnicy"
 horizontal_alignment = 1
 
-[node name="Cabinet" parent="Objects" instance=ExtResource("3")]
+[node name="Cabinet" parent="Objects" unique_id=472917172 instance=ExtResource("3")]
 visible = false
+z_index = 2
 position = Vector2(825, 567)
+collision_layer = 7
+collision_mask = 0
 size = Vector2(61, 66)
-color = Color(0.55,0.42,0.60,1)
+color = Color(0.55, 0.42, 0.6, 1)
 layers = 7
 
-[node name="Label" type="Label" parent="Objects/Cabinet"]
+[node name="Label" type="Label" parent="Objects/Cabinet" unique_id=310701294]
 z_index = 8
 offset_left = -90.0
 offset_top = -56.0
 offset_right = 90.0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 text = "Szafka"
 horizontal_alignment = 1
 
-[node name="Player" parent="." instance=ExtResource("2")]
-layer_switching_enabled = false
-scale = Vector2(1.25, 1.25)
+[node name="Player" parent="." unique_id=2016173304 instance=ExtResource("2")]
 position = Vector2(103, 565)
+scale = Vector2(1.25, 1.25)
+layer_switching_enabled = false
 
-[node name="Body" parent="Player" index="1"]
+[node name="TextureRect" parent="Player" index="2" unique_id=982247166]
 visible = false
 
-[node name="TextureRect" parent="Player" index="2"]
-visible = false
-
-[node name="HouseCharacter" type="Sprite2D" parent="Player"]
+[node name="HouseCharacter" type="Sprite2D" parent="Player" unique_id=2118400479]
 texture_filter = 1
-position = Vector2(0, 0)
 scale = Vector2(2.25, 2.25)
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1491090558]
 
-[node name="Darkness" type="ColorRect" parent="HUD"]
+[node name="Darkness" type="ColorRect" parent="HUD" unique_id=1302726648]
 visible = false
 offset_right = 1152.0
 offset_bottom = 752.0
 mouse_filter = 2
 color = Color(0.01, 0.015, 0.025, 0.84)
 
-[node name="TextBackground" type="ColorRect" parent="HUD"]
+[node name="TextBackground" type="ColorRect" parent="HUD" unique_id=1522989736]
 offset_top = 622.0
 offset_right = 1152.0
 offset_bottom = 752.0
 mouse_filter = 2
 color = Color(0.04, 0.05, 0.07, 0.9)
 
-[node name="Dialogue" type="Label" parent="HUD"]
+[node name="Dialogue" type="Label" parent="HUD" unique_id=2002660431]
 visible = false
 offset_left = 80.0
 offset_top = 630.0
@@ -188,7 +198,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="Prompt" type="Label" parent="HUD"]
+[node name="Prompt" type="Label" parent="HUD" unique_id=585080517]
 offset_left = 32.0
 offset_top = 692.0
 offset_right = 1120.0
@@ -196,7 +206,7 @@ theme_override_colors/font_color = Color(0.98, 0.83, 0.48, 1)
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 
-[node name="Status" type="Label" parent="HUD"]
+[node name="Status" type="Label" parent="HUD" unique_id=2028125141]
 offset_left = 32.0
 offset_top = 722.0
 offset_right = 1120.0
