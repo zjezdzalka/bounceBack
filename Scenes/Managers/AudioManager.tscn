@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://bssjjygu83iwl"]
+
+[ext_resource type="Script" uid="uid://da11xjja1ocm7" path="res://Scripts/AudioManager.gd" id="1_hp1cr"]
+
+[node name="AudioManager" type="Node" unique_id=1370409696]
+script = ExtResource("1_hp1cr")
+
+[node name="JumpSfx" type="AudioStreamPlayer" parent="." unique_id=34111824]
+volume_db = -3.0
+
+[node name="CoinPickup" type="AudioStreamPlayer" parent="." unique_id=1164214983]
+
+[node name="DeathSfx" type="AudioStreamPlayer" parent="." unique_id=1771464693]
+volume_db = -3.0
+
+[node name="RespawnSfx" type="AudioStreamPlayer" parent="." unique_id=2058084024]
+
+[node name="LevelCompleteSfx" type="AudioStreamPlayer" parent="." unique_id=424982804]
+volume_db = -4.0
