@@ -21,6 +21,7 @@ const SAVED_FIELDS := ["wardrobe_raised", "lamp_on", "laptop_checked", "wardrobe
 const AVATAR_ART_SCALE := 1.25
 const BODY_LAYER := 8
 const SHELF_LAYER := 16
+const LIFTED_WARDROBE_Y := 155.0
 const BACKGROUND_PROP_LAYER := 32
 @onready var objects: Node2D = $Objects
 @onready var dialogue: Label = $HUD/Dialogue
@@ -209,8 +210,7 @@ func _update_story(delta: float) -> void:
 					_say([BED_LINES[bed_line]])
 					bed_line += 1
 		Stage.HALL:
-			if not wardrobe_raised and player.velocity.y < -1.0:
-				_wardrobe_jump_hint()
+			_wardrobe_approach_hint()
 		Stage.LIGHTS:
 			if $Objects/Wires.visible and _near("Wires", 105.0):
 				_hint("wires", "Narrator: See those wires? Try connecting them. Maybe that’ll get the lights working.")
@@ -228,7 +228,7 @@ func _update_story(delta: float) -> void:
 
 func _update_target() -> void:
 	target = ""
-	if back_door and _near("BackDoor", 74.0):
+	if back_door and (player == original or stage == Stage.LIGHTS) and _near("BackDoor", 74.0):
 		target = "BackDoor"
 		return
 	match stage:
@@ -237,18 +237,18 @@ func _update_target() -> void:
 				target = "RoomKey"
 			elif _near("Laptop") and lamp_on and not laptop_checked:
 				target = "Laptop"
-			elif _near("RoomDoor") and lamp_on:
+			elif player == original and _near("RoomDoor") and lamp_on:
 				target = "RoomDoor"
 		Stage.HALL:
-			if hallucinating and wardrobe_raised and _near("WardrobePassage", 64.0):
+			if hallucinating and wardrobe_raised and front_door_checked and _near("WardrobePassage", 64.0):
 				target = "WardrobePassage"
 			elif _can_grab("Cabinet", 65.0):
 				target = "Cabinet"
 			elif _can_grab("HallChair"):
 				target = "HallChair"
-			elif _near("CellarDoor"):
+			elif player == original and _near("CellarDoor"):
 				target = "CellarDoor"
-			elif _near("FrontDoor"):
+			elif player == original and _near("FrontDoor"):
 				target = "FrontDoor"
 		Stage.LIGHTS:
 			if $Objects/Wires.visible and _near("Wires", 65.0):
@@ -356,14 +356,12 @@ func _set_active_avatar(avatar: CharacterBody2D) -> void:
 	avatar.set_process_input(true)
 	avatar.set_physics_process(true)
 
-func _wardrobe_jump_hint() -> void:
-	if wardrobe_hint_shown or moved_props.has("HallChair"):
+func _wardrobe_approach_hint() -> void:
+	if player != original or wardrobe_raised or wardrobe_hint_shown or not _can_show_narrator_hint():
 		return
 	var wardrobe: Node2D = objects.get_node("Wardrobe")
 	var half_width: float = wardrobe.get("size").x / 2.0
-	var left: float = wardrobe.position.x - half_width
-	# Pressing Space anywhere in the ~220 px in front of the wardrobe counts as trying to jump it.
-	if player.position.x > left - 220.0 and player.position.x < left + half_width * 2.0:
+	if absf(original.position.x - wardrobe.position.x) <= half_width + 88.0:
 		wardrobe_hint_shown = true
 		_hint("wardrobe_jump", "Narrator: Yeah, you’re not jumping that. Try using that superpower of yours again. Maybe you’ll see something you can use.")
 
@@ -376,10 +374,12 @@ func _reveal_dialogue() -> void:
 				_hint("first_shrink", "Narrator: I didn’t expect you to shrink that much. Might come in handy. You can squeeze into tighter spaces now.")
 		Stage.HALL:
 			if not wardrobe_raised:
-				_hint("cabinet_plate", "Narrator: Slide that cabinet onto the pressure plate. It might lift the wardrobe.")
+				_hint("cabinet_plate", "Narrator: Use the chair to reach those ledges. The cabinet on the other side goes on the pressure plate.")
 
 func _interact() -> void:
 	if target.is_empty():
+		return
+	if player != original and (target in ["RoomDoor", "FrontDoor", "CellarDoor"] or (target == "BackDoor" and stage != Stage.LIGHTS)):
 		return
 	if target != "Wires":
 		learned_hints[_interaction_hint_id()] = true
@@ -424,7 +424,7 @@ func _interact() -> void:
 				_refresh_objects()
 				_say(["Hero: Locked.", "Narrator: Of course it is. What about the basement? Maybe there’s a way out?"])
 		"WardrobePassage":
-			if player == apparition and hallucinating and wardrobe_raised:
+			if player == apparition and hallucinating and wardrobe_raised and front_door_checked:
 				_change_room("res://Scenes/Levels/lights.tscn", false)
 		"CellarDoor":
 			if absf($Objects/Cabinet.position.x - $Objects/CellarDoor.position.x) < 64.0:
@@ -542,7 +542,7 @@ func _raise_wardrobe() -> void:
 	wardrobe_raised = true
 	var wardrobe := $Objects/Wardrobe as StaticBody2D
 	wardrobe.collision_layer = 0
-	create_tween().tween_property(wardrobe, "position:y", 294.0, 0.45)
+	create_tween().tween_property(wardrobe, "position:y", LIFTED_WARDROBE_Y, 0.45)
 	$Objects/PressurePlate/Surface.color = Color("#67b178")
 
 func _ladder_ready() -> bool:
@@ -629,10 +629,11 @@ func _refresh_objects() -> void:
 			$Objects/HallucinationShelves.visible = hallucinating
 		Stage.HALL:
 			_show_prop("HallChair", hallucinating)
+			_show_prop("WardrobeParkour", hallucinating and not wardrobe_raised)
 			_show_prop("Cabinet", hallucinating)
 			$Objects/CellarDoor.modulate = Color.WHITE if lights_fixed else Color(0.58, 0.58, 0.64)
 			_show_prop("PressurePlate", hallucinating)
-			_show_prop("WardrobePassage", hallucinating and wardrobe_raised)
+			_show_prop("WardrobePassage", hallucinating and wardrobe_raised and front_door_checked)
 		Stage.LIGHTS:
 			_show_prop("Wires", hallucinating and not lights_fixed)
 		Stage.BASEMENT:
@@ -788,7 +789,7 @@ func _restore_progress() -> bool:
 		$Objects/Desk/LaptopOn.visible = laptop_checked
 		darkness.hide()
 	if stage == Stage.HALL and wardrobe_raised:
-		$Objects/Wardrobe.position.y = 294.0
+		$Objects/Wardrobe.position.y = LIFTED_WARDROBE_Y
 		$Objects/Wardrobe.collision_layer = 0
 		$Objects/PressurePlate/Surface.color = Color("#67b178")
 	if record.get("returning_from_niche", false):
