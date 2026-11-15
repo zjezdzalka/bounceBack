@@ -26,3 +26,7 @@ window/stretch/mode="canvas_items"
 [autoload]
 
 HouseSession="*res://Scenes/Levels/house_session.gd"
+
+[layer_names]
+
+2d_physics/layer_6="Hallucination Background"

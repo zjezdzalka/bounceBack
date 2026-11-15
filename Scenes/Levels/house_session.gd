@@ -13,6 +13,7 @@ const BUSES := ["Master", "Sound Effects", "Music", "Dialogue"]
 
 var rooms: Dictionary = {}
 var returning := false
+var hallucination_in_transit := false
 var learned_bounce_back := false
 var config := ConfigFile.new()
 var panel: CenterContainer

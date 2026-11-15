@@ -15,6 +15,18 @@
 
 [ext_resource type="Texture2D" path="res://Art/House/Door_big.png" id="Door_big"]
 
+[sub_resource type="RectangleShape2D" id="BackgroundNightstandShape"]
+size = Vector2(88, 6)
+
+[sub_resource type="RectangleShape2D" id="BackgroundDeskShape"]
+size = Vector2(154, 6)
+
+[sub_resource type="RectangleShape2D" id="BackgroundLaptopShape"]
+size = Vector2(62, 6)
+
+[sub_resource type="RectangleShape2D" id="BackgroundClockShape"]
+size = Vector2(65, 6)
+
 [node name="Room" type="Node2D" unique_id=1494530991]
 script = ExtResource("1")
 next_scene = "res://Scenes/Levels/hallway.tscn"
@@ -276,6 +288,42 @@ one_way = true
 position = Vector2(749, 448)
 scale = Vector2(1.7999976, 1.7999976)
 texture = ExtResource("10_u3ghy")
+
+[node name="BackgroundNightstand" type="StaticBody2D" parent="Objects"]
+position = Vector2(103, 551)
+collision_layer = 32
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Objects/BackgroundNightstand"]
+shape = SubResource("BackgroundNightstandShape")
+one_way_collision = true
+
+[node name="BackgroundDesk" type="StaticBody2D" parent="Objects"]
+position = Vector2(548, 532)
+collision_layer = 32
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Objects/BackgroundDesk"]
+shape = SubResource("BackgroundDeskShape")
+one_way_collision = true
+
+[node name="BackgroundLaptop" type="StaticBody2D" parent="Objects"]
+position = Vector2(548, 486)
+collision_layer = 32
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Objects/BackgroundLaptop"]
+shape = SubResource("BackgroundLaptopShape")
+one_way_collision = true
+
+[node name="BackgroundClock" type="StaticBody2D" parent="Objects"]
+position = Vector2(749, 399)
+collision_layer = 32
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Objects/BackgroundClock"]
+shape = SubResource("BackgroundClockShape")
+one_way_collision = true
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1374781356]
 
