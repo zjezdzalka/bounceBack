@@ -4,16 +4,17 @@
 [ext_resource type="PackedScene" uid="uid://dmg0ukd1sp2um" path="res://player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://block.tscn" id="3"]
 [ext_resource type="Texture2D" uid="uid://dh26rm24nmc40" path="res://Art/House/Clock.png" id="10_u3ghy"]
+[ext_resource type="Texture2D" uid="uid://crw062v0s02c7" path="res://Art/House/hanger.png" id="11_g5in4"]
 [ext_resource type="AudioStream" uid="uid://dajs3maeikga7" path="res://Audio/Room/alarm-clock-ticking_60bpm2.wav" id="11_u3ghy"]
-[ext_resource type="Texture2D" path="res://Art/House/Bed_nopillow_big.png" id="Bed"]
-[ext_resource type="Texture2D" path="res://Art/House/Nighttable_off_big.png" id="Nighttable_off"]
-[ext_resource type="Texture2D" path="res://Art/House/Nighttable_on_big.png" id="Nighttable_on"]
-[ext_resource type="Texture2D" path="res://Art/House/Pillow_big.png" id="Pillow"]
+[ext_resource type="Texture2D" uid="uid://d2huy04conhhx" path="res://Art/House/window.png" id="13_pfkqg"]
+[ext_resource type="Texture2D" uid="uid://dx026nl28svmt" path="res://Art/House/Bed_nopillow_big.png" id="Bed"]
+[ext_resource type="Texture2D" uid="uid://dsa2s4q2sgexm" path="res://Art/House/Door_big.png" id="Door_big"]
+[ext_resource type="Texture2D" uid="uid://10lacv6jmgfl" path="res://Art/House/Nighttable_off_big.png" id="Nighttable_off"]
+[ext_resource type="Texture2D" uid="uid://5u7fleoth117" path="res://Art/House/Nighttable_on_big.png" id="Nighttable_on"]
+[ext_resource type="Texture2D" uid="uid://bcx5iliu80rck" path="res://Art/House/Pillow_big.png" id="Pillow"]
 [ext_resource type="Texture2D" uid="uid://cclavdg8xcl3e" path="res://Art/House/Starting_room.png" id="Starting_room"]
-[ext_resource type="Texture2D" path="res://Art/House/Table_laptop_off_big.png" id="Table_laptop_off"]
-[ext_resource type="Texture2D" path="res://Art/House/Table_laptop_on_big.png" id="Table_laptop_on"]
-
-[ext_resource type="Texture2D" path="res://Art/House/Door_big.png" id="Door_big"]
+[ext_resource type="Texture2D" uid="uid://cm4rjgucytjw0" path="res://Art/House/Table_laptop_off_big.png" id="Table_laptop_off"]
+[ext_resource type="Texture2D" uid="uid://bly20qlm41ogo" path="res://Art/House/Table_laptop_on_big.png" id="Table_laptop_on"]
 
 [sub_resource type="RectangleShape2D" id="BackgroundNightstandShape"]
 size = Vector2(88, 6)
@@ -35,8 +36,8 @@ next_scene = "res://Scenes/Levels/hallway.tscn"
 modulate = Color(0.8, 0.8, 0.8, 1)
 z_index = -4
 texture_filter = 1
-position = Vector2(576, 300)
-scale = Vector2(15.567568, 17.142857)
+position = Vector2(576, 356.5)
+scale = Vector2(15.567568, 13.914285)
 texture = ExtResource("Starting_room")
 region_enabled = true
 region_rect = Rect2(2, 2, 74, 35)
@@ -68,6 +69,28 @@ collision_layer = 7
 collision_mask = 0
 size = Vector2(24, 600)
 color = Color(0.19, 0.22, 0.27, 1)
+layers = 7
+
+[node name="Roof" parent="Objects" unique_id=1902691145 instance=ExtResource("3")]
+z_index = 2
+position = Vector2(577, 105)
+scale = Vector2(47.969265, -0.040000558)
+skew = -4.4226646e-05
+collision_layer = 7
+collision_mask = 0
+size = Vector2(24, 600)
+color = Color(0.19, 0.22, 0.27, 1)
+layers = 7
+
+[node name="Sky" parent="Objects" unique_id=57973602 instance=ExtResource("3")]
+z_index = 2
+position = Vector2(576, 45)
+scale = Vector2(47.969265, -0.16000223)
+skew = -1.1086464e-05
+collision_layer = 7
+collision_mask = 0
+size = Vector2(24, 600)
+color = Color(0.14347026, 0.052051418, 0.33547047, 1)
 layers = 7
 
 [node name="Bed" parent="Objects" unique_id=1785676080 instance=ExtResource("3")]
@@ -105,10 +128,10 @@ position = Vector2(-10, -3)
 polygon = PackedVector2Array(-98, 38, -80, 38, -80, 21, -72, 21, -71, 12, 91, 12, 91, 21, 100, 21, 100, 38, 119, 38, 118, -33, -48, -33, -48, -45, -88, -45, -88, -33, -98, -33)
 
 [node name="Nightstand" parent="Objects" unique_id=1825576246 instance=ExtResource("3")]
-z_index = -1
+z_index = 2
 position = Vector2(103, 551)
 scale = Vector2(1.1600013, 1.1600013)
-collision_layer = 7
+collision_layer = 0
 collision_mask = 0
 size = Vector2(77, 60)
 color = Color(0.32, 0.26, 0.23, 1)
@@ -134,9 +157,9 @@ scale = Vector2(1.375, 1.375)
 texture = ExtResource("Nighttable_off")
 
 [node name="LampOn" type="Sprite2D" parent="Objects/Nightstand" unique_id=1801353893]
+visible = false
 z_index = -1
 z_as_relative = false
-visible = false
 texture_filter = 1
 position = Vector2(0, -9)
 scale = Vector2(1.375, 1.375)
@@ -251,41 +274,60 @@ offset_bottom = 6.0
 mouse_filter = 2
 color = Color(0.98, 0.83, 0.36, 1)
 
-[node name="HallucinationShelves" type="Node2D" parent="Objects"]
+[node name="HallucinationShelves" type="Node2D" parent="Objects" unique_id=277860667]
 visible = false
 
-[node name="Shelf1" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+[node name="Shelf1" parent="Objects/HallucinationShelves" unique_id=1020240910 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(381, 475)
+collision_layer = 16
+collision_mask = 0
 size = Vector2(120, 10)
 color = Color(0.06, 0.06, 0.08, 1)
 layers = 16
 one_way = true
 
-[node name="Shelf2" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+[node name="Shelf2" parent="Objects/HallucinationShelves" unique_id=1394630234 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(1005, 397)
+collision_layer = 16
+collision_mask = 0
 size = Vector2(118, 10)
 color = Color(0.06, 0.06, 0.08, 1)
 layers = 16
 one_way = true
 
-[node name="Shelf3" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+[node name="Shelf3" parent="Objects/HallucinationShelves" unique_id=1777300381 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(800, 306)
+collision_layer = 16
+collision_mask = 0
 size = Vector2(128, 10)
 color = Color(0.06, 0.06, 0.08, 1)
 layers = 16
 one_way = true
 
-[node name="Shelf4" parent="Objects/HallucinationShelves" instance=ExtResource("3")]
+[node name="Shelf4" parent="Objects/HallucinationShelves" unique_id=2000646073 instance=ExtResource("3")]
+z_index = 2
 position = Vector2(510, 225)
+collision_layer = 16
+collision_mask = 0
 size = Vector2(142, 10)
 color = Color(0.06, 0.06, 0.08, 1)
 layers = 16
 one_way = true
 
+[node name="Picture" type="Node2D" parent="Objects" unique_id=460451089]
+
+[node name="Sprite2D" type="Sprite2D" parent="Objects/Picture" unique_id=1700802797]
+position = Vector2(347, 395.00003)
+scale = Vector2(0.26249877, 0.26249877)
+texture = ExtResource("11_g5in4")
+
 [node name="Clock" type="Node2D" parent="Objects" unique_id=990623694]
 
 [node name="Sprite2D" type="Sprite2D" parent="Objects/Clock" unique_id=2053505668]
-position = Vector2(749, 448)
+position = Vector2(813, 414)
 scale = Vector2(1.7999976, 1.7999976)
 texture = ExtResource("10_u3ghy")
 

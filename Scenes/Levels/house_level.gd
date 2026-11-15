@@ -199,7 +199,7 @@ func _wake_up() -> void:
 func _update_story(delta: float) -> void:
 	match stage:
 		Stage.ROOM:
-			if hallucinating and not room_key and _near("RoomKey", 170.0):
+			if hallucinating and not room_key and _near("RoomKey", 35.0):
 				_hint("room_key", "Narrator: There’s your key. Grab it before you bounce back to reality.")
 			if lamp_on and (player.position.x < 42.0 or player.position.x > 258.0 or laptop_checked):
 				left_bed = true
@@ -890,9 +890,9 @@ func _update_hallucination_effect() -> void:
 	hallucination_eye.texture = EYE_FRAMES[first]
 	hallucination_eye.show()
 	eye_animation = create_tween()
-	eye_animation.tween_callback(hallucination_eye.set_texture.bind(EYE_FRAMES[1])).set_delay(0.10)
+	eye_animation.tween_callback(hallucination_eye.set_texture.bind(EYE_FRAMES[1])).set_delay(0.30)
 	eye_animation.tween_callback(hallucination_eye.set_texture.bind(EYE_FRAMES[last])).set_delay(0.10)
-	eye_animation.tween_callback(hallucination_eye.hide).set_delay(0.12)
+	eye_animation.tween_callback(hallucination_eye.hide).set_delay(0.15)
 
 func _open_wire_puzzle() -> void:
 	if lights_fixed or busy:
